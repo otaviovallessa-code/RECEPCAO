@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema CPM - Governo da Bahia</title>
+    <style>
+        body { 
+            background-color: #0b3c66; 
+            color: white; 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh;
+        }
+
+        .header-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 { font-size: 42px; margin: 0; letter-spacing: 1px; }
+        h2 { font-size: 24px; color: #ff0000; margin: 5px 0; font-weight: bold; }
+        .sub-text { font-size: 14px; opacity: 0.8; text-transform: uppercase; }
+
+        .menu-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            width: 90%;
+            max-width: 1000px;
+        }
+
+        .menu-card {
+            background: white;
+            padding: 40px 20px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #0b3c66;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border-bottom: 8px solid #ff0000;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-10px);
+            background-color: #f8f9fa;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+        }
+
+        .icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            text-transform: uppercase;
+            text-align: center;
+        }
+
+        .card-desc {
+            font-size: 12px;
+            font-weight: normal;
+            margin-top: 10px;
+            color: #666;
+            text-align: center;
+        }
+
+        /* Cores específicas dos ícones/detalhes */
+        .triagem { color: #28a745; }
+        .atendimento { color: #d50000; }
+        .painel { color: #0056b3; }
+
+        footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 12px;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <h1>GOVERNO DO ESTADO DA BAHIA</h1>
+        <h2>SECRETARIA DA EDUCAÇÃO - SEC</h2>
+        <div class="sub-text">Sistema de Gestão de Atendimento CPM</div>
+    </div>
+
+    <div class="menu-container">
+        <a href="index.html" class="menu-card"target="_blank">
+            <div class="icon triagem">📋</div>
+            <div class="card-title">Triagem</div>
+            <div class="card-desc">Gerar novas senhas e cadastrar servidores.</div>
+        </a>
+
+        <a href="chamado.html" class="menu-card"target="_blank">>
+            <div class="icon atendimento">🎧</div>
+            <div class="card-title">Atendimento</div>
+            <div class="card-desc">Chamar senhas e gerar relatórios diários.</div>
+        </a>
+
+        <a href="painel.html" class="menu-card" target="_blank">
+            <div class="icon painel">📺</div>
+            <div class="card-title">Painel TV</div>
+            <div class="card-desc">Exibição de senhas para o público (Abrir em nova aba).</div>
+        </a>
+    </div>
+
+    <footer>
+        &copy; 2026 SEC - Coordenação de Provimento e Movimentação
+    </footer>
+
+</body>
+</html>

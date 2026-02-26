@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Atendimento - CPM</title>
+    <style>
+        body {
+            background-color: #0b3c66;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 3fr 1fr; /* Espaço maior para o chamado atual */
+            overflow: hidden;
+        }
+
+        /* Lado Esquerdo: Chamada Atual */
+        .painel-principal {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 5px solid #ff0000;
+            padding: 20px;
+        }
+
+        .label-chamada { font-size: 40px; text-transform: uppercase; margin-bottom: 20px; }
+        
+        .senha-atual {
+            font-size: 200px;
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+            margin: 0;
+        }
+
+        .nome-atual {
+            font-size: 80px;
+            text-align: center;
+            margin-top: 20px;
+            text-transform: uppercase;
+        }
+
+        .assunto-atual {
+            font-size: 35px;
+            margin-top: 30px;
+            background: #d50000;
+            padding: 10px 40px;
+            border-radius: 50px;
+        }
+
+        /* Lado Direito: Histórico */
+        .historico {
+            background: #092d4d;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .historico h2 {
+            text-align: center;
+            border-bottom: 2px solid #ff0000;
+            padding-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .lista-historico {
+            list-style: none;
+            padding: 0;
+            margin-top: 20px;
+        }
+
+        .historico-item {
+            background: rgba(255, 255, 255, 0.1);
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            animation: slideIn 0.5s ease;
+        }
+
+        .historico-senha { font-size: 32px; font-weight: bold; color: #ff0000; }
+        .historico-nome { font-size: 20px; display: block; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="painel-principal">
+        <div class="label-chamada">Senha Atual</div>
+        <div id="senha" class="senha-atual">---</div>
+        <div id="nome" class="nome-atual">Aguardando...</div>
+        <div id="assunto" class="assunto-atual">Sistema de Atendimento CPM</div>
+    </div>
+
+    <div class="historico">
+        <h2>Últimas Chamadas</h2>
+        <div id="lista-historico" class="lista-historico">
+            </div>
+    </div>
+
+    <audio id="audioNotificacao">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        const canal = new BroadcastChannel('senha_channel');
+        const audio = document.getElementById('audioNotificacao');
+        const historico = [];
+
+        canal.onmessage = (event) => {
+            const dados = event.data;
+            
+            // 1. Tocar Som
+            audio.play();
+
+            // 2. Atualizar Tela Principal
+            document.getElementById('senha').innerText = dados.senha;
+            document.getElementById('nome').innerText = dados.nome;
+            document.getElementById('assunto').innerText = dados.assunto;
+
+            // 3. Falar o nome (Opcional - Voz do Google/Windows)
+            const mensagemVoz = new SpeechSynthesisUtterance(`Senha ${dados.senha}, ${dados.nome}`);
+            window.speechSynthesis.speak(mensagemVoz);
+
+            // 4. Atualizar Histórico Lateral
+            adicionarAoHistorico(dados);
+        };
+
+        function adicionarAoHistorico(dados) {
+            const lista = document.getElementById('lista-historico');
+            
+            // Criar novo item
+            const div = document.createElement('div');
+            div.className = 'historico-item';
+            div.innerHTML = `
+                <span class="historico-senha">${dados.senha}</span>
+                <span class="historico-nome">${dados.nome}</span>
+            `;
+
+            // Inserir no topo da lista
+            lista.prepend(div);
+
+            // Limitar a 5 itens no histórico
+            if (lista.children.length > 5) {
+                lista.removeChild(lista.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>
