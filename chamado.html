@@ -10,19 +10,22 @@
         h2 { font-size: 22px; color: #ff0000; margin: 5px 0; font-weight: bold; }
         
         .form-container { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; width: 550px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.2); }
-        .status-grande { font-size: 45px; color: #ff0000; font-weight: bold; margin: 25px 0; min-height: 60px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .status-grande { font-size: 40px; color: #ff0000; font-weight: bold; margin: 25px 0; min-height: 60px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); line-height: 1.2; }
         
-        .btn-acao { background-color: #d50000; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; text-transform: uppercase; transition: 0.3s; }
-        .btn-acao:hover { background-color: #ff1a1a; }
+        .btn-acao { background-color: #d50000; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; text-transform: uppercase; transition: 0.3s; border-radius: 4px; }
+        .btn-acao:hover { background-color: #ff1a1a; transform: scale(1.02); }
         
-        .btn-relatorio { background-color: #28a745; margin-top: 20px; width: 350px; border-radius: 5px; }
+        .btn-relatorio { background-color: #28a745; margin-top: 20px; width: 350px; border-radius: 5px; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; }
 
-        .fila-box { background: white; color: #333; width: 95%; max-width: 900px; margin: 30px auto; padding: 15px; border-radius: 5px; }
+        .fila-box { background: white; color: #333; width: 95%; max-width: 900px; margin: 30px auto; padding: 15px; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .fila-item { display: grid; grid-template-columns: 100px 2fr 1.5fr 1fr; border-bottom: 1px solid #ddd; padding: 10px; font-size: 14px; text-align: left; }
         .header { font-weight: bold; background: #eee; border-bottom: 2px solid #0b3c66; }
-        b { color: #d50000; }
         
-        .badge-turno { font-size: 11px; opacity: 0.6; margin-top: 8px; display: block; font-style: italic; }
+        .senha-p { color: #e67e22; font-weight: bold; } /* Cor para destaque de prioridade */
+        .senha-comum { color: #d50000; }
+        
+        .badge-turno { font-size: 12px; opacity: 0.8; margin-top: 12px; display: block; font-style: italic; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
+        .aviso-prioridade { color: #ffc107; font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -33,13 +36,15 @@
     <div class="form-container">
         <div id="display-chamada" class="status-grande">AGUARDANDO...</div>
         
+        <div id="alerta-fila"></div>
+
         <button class="btn-acao" onclick="chamarAlternado()">CHAMAR PRÓXIMO</button>
         
         <button class="btn-acao" style="background:#0056b3" onclick="chamarInterno()">CHAMAR INTERNO</button>
         
-        <button class="btn-relatorio" style="background-color: #28a745; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; margin-top: 15px;" onclick="exportarExcel()">📊 BAIXAR RELATÓRIO EXCEL</button>
+        <button class="btn-relatorio" onclick="exportarExcel()">📊 BAIXAR RELATÓRIO EXCEL</button>
         
-        <span id="proximo-tipo" class="badge-turno">Próxima prioridade: EFETIVO</span>
+        <span id="proximo-tipo" class="badge-turno">Carregando fila...</span>
     </div>
 
     <div class="fila-box">
@@ -60,45 +65,72 @@
             if (!db) return;
             const store = db.transaction("atendimentos", "readonly").objectStore("atendimentos");
             store.getAll().onsuccess = (e) => {
-                const lista = e.target.result.filter(i => i.status === "AGUARDANDO");
-                let html = `<div class="fila-item header"><span>Senha</span><span>Nome</span><span>Assunto</span><span>Vínculo</span></div>`;
-                lista.forEach(p => {
-                    html += `<div class="fila-item"><b>${p.senha}</b><span>${p.nome}</span><span>${p.assunto}</span><span>${p.tipo}</span></div>`;
+                const todos = e.target.result.filter(i => i.status === "AGUARDANDO");
+                
+                // Ordenar para exibição: Prioritários primeiro
+                todos.sort((a, b) => {
+                    if (a.prioridade === b.prioridade) return a.timestamp - b.timestamp;
+                    return a.prioridade ? -1 : 1;
                 });
-                document.getElementById('fila-atendimento').innerHTML = lista.length ? html : "Ninguém aguardando.";
-                atualizarIndicadorTurno();
+
+                let html = `<div class="fila-item header"><span>Senha</span><span>Nome</span><span>Assunto</span><span>Vínculo</span></div>`;
+                todos.forEach(p => {
+                    const classe = p.prioridade ? "senha-p" : "senha-comum";
+                    html += `<div class="fila-item"><b class="${classe}">${p.senha}</b><span>${p.nome} ${p.prioridade ? '⭐' : ''}</span><span>${p.assunto}</span><span>${p.tipo}</span></div>`;
+                });
+                
+                document.getElementById('fila-atendimento').innerHTML = todos.length ? html : "Ninguém aguardando.";
+                
+                atualizarIndicadorTurno(todos);
             };
         }
 
-        function atualizarIndicadorTurno() {
-            const txt = proximoEhEfetivo ? "EFETIVO" : "REDA";
-            document.getElementById('proximo-tipo').innerText = `Prioridade da próxima chamada: ${txt}`;
+        function atualizarIndicadorTurno(fila) {
+            const temPrioridade = fila.some(i => i.prioridade);
+            const alertaDiv = document.getElementById('alerta-fila');
+            
+            if (temPrioridade) {
+                alertaDiv.innerHTML = `<span class="aviso-prioridade">⚠️ EXISTE PRIORIDADE NA FILA</span>`;
+                document.getElementById('proximo-tipo').innerText = `A próxima chamada será: PRIORIDADE`;
+            } else {
+                alertaDiv.innerHTML = "";
+                const txt = proximoEhEfetivo ? "EFETIVO" : "REDA";
+                document.getElementById('proximo-tipo').innerText = `Turno atual (se não houver prioridade): ${txt}`;
+            }
         }
 
         function chamarAlternado() {
             const store = db.transaction("atendimentos", "readwrite").objectStore("atendimentos");
             store.getAll().onsuccess = (e) => {
-                const todos = e.target.result.filter(i => i.status === "AGUARDANDO");
-                if (todos.length === 0) return alert("Não há ninguém aguardando!");
+                const fila = e.target.result.filter(i => i.status === "AGUARDANDO");
+                if (fila.length === 0) return alert("Não há ninguém aguardando!");
 
+                // 1. PRIORIDADE ABSOLUTA (Regra de Ouro)
+                const prioridades = fila.filter(i => i.prioridade).sort((a,b) => a.timestamp - b.timestamp);
+                
                 let selecionado;
-                const efetivos = todos.filter(i => i.tipo === 'EFETIVO');
-                const redas = todos.filter(i => i.tipo === 'REDA');
 
-                if (proximoEhEfetivo) {
-                    selecionado = efetivos[0] || redas[0];
+                if (prioridades.length > 0) {
+                    selecionado = prioridades[0];
+                    // Quando chama prioridade, não altera a vez do Efetivo/Reda
                 } else {
-                    selecionado = redas[0] || efetivos[0];
+                    // 2. LÓGICA DE ALTERNÂNCIA (Caso não haja prioridade)
+                    const efetivos = fila.filter(i => i.tipo === 'EFETIVO').sort((a,b) => a.timestamp - b.timestamp);
+                    const redas = fila.filter(i => i.tipo === 'REDA').sort((a,b) => a.timestamp - b.timestamp);
+
+                    if (proximoEhEfetivo) {
+                        selecionado = efetivos[0] || redas[0];
+                    } else {
+                        selecionado = redas[0] || efetivos[0];
+                    }
+
+                    // Alternar o turno apenas se ambos existirem na fila
+                    if (efetivos.length > 0 && redas.length > 0) {
+                        proximoEhEfetivo = !proximoEhEfetivo;
+                    }
                 }
 
                 if (selecionado) {
-                    if (efetivos.length > 0 && redas.length > 0) {
-                        proximoEhEfetivo = !proximoEhEfetivo;
-                    } else if (efetivos.length > 0) {
-                        proximoEhEfetivo = false; 
-                    } else {
-                        proximoEhEfetivo = true; 
-                    }
                     finalizarChamada(selecionado);
                 }
             };
@@ -119,18 +151,30 @@
         function finalizarChamada(selecionado) {
             selecionado.status = "ATENDIDO";
             selecionado.horaChamado = new Date().toLocaleTimeString();
-            db.transaction("atendimentos", "readwrite").objectStore("atendimentos").put(selecionado);
             
-            document.getElementById('display-chamada').innerText = `${selecionado.senha} - ${selecionado.nome}`;
-            canalTV.postMessage(selecionado);
-            canal.postMessage({ acao: 'atualizar' });
-            carregarFila();
+            const trans = db.transaction("atendimentos", "readwrite");
+            trans.objectStore("atendimentos").put(selecionado);
+            
+            trans.oncomplete = () => {
+                document.getElementById('display-chamada').innerText = `${selecionado.senha} - ${selecionado.nome}`;
+                canalTV.postMessage(selecionado);
+                canal.postMessage({ acao: 'atualizar' });
+                carregarFila();
+            };
         }
 
         function exportarExcel() {
             db.transaction("atendimentos", "readonly").objectStore("atendimentos").getAll().onsuccess = (e) => {
                 const dados = e.target.result.map(i => ({
-                    Senha: i.senha, Nome: i.nome, Matrícula: i.matricula, Telefone: i.telefone, Assunto: i.assunto, Vínculo: i.tipo, Chegada: i.horaGeracao, Chamado: i.horaChamado
+                    Senha: i.senha, 
+                    Nome: i.nome, 
+                    Matrícula: i.matricula, 
+                    Telefone: i.telefone, 
+                    Assunto: i.assunto, 
+                    Vínculo: i.tipo, 
+                    Prioridade: i.prioridade ? "SIM" : "NÃO",
+                    Chegada: i.horaGeracao, 
+                    Chamado: i.horaChamado || "Não chamado"
                 }));
                 const ws = XLSX.utils.json_to_sheet(dados);
                 const wb = XLSX.utils.book_new();

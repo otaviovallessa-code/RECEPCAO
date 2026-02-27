@@ -7,6 +7,7 @@
         :root {
             --azul-governo: #0b3c66;
             --vermelho-governo: #d50000;
+            --laranja-prioridade: #e67e22;
             --branco: #ffffff;
             --cinza-fundo: #f4f7f6;
         }
@@ -22,13 +23,13 @@
             align-items: center;
         }
 
-        /* Cabeçalho Estilizado */
         header {
             width: 100%;
             padding: 30px 0;
             background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%);
             border-bottom: 4px solid var(--vermelho-governo);
             margin-bottom: 40px;
+            text-align: center;
         }
 
         h1 { font-size: 32px; margin: 0; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
@@ -43,7 +44,6 @@
             margin-top: 10px;
         }
 
-        /* Container Principal */
         .main-content {
             width: 100%;
             max-width: 900px;
@@ -65,7 +65,7 @@
         }
 
         .field-group { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px; }
-        label { font-size: 13px; font-weight: 700; color: var(--azul-governo); margin-bottom: 6px; text-transform: uppercase; }
+        label { font-size: 11px; font-weight: 700; color: var(--azul-governo); margin-bottom: 6px; text-transform: uppercase; }
         
         input[type="text"] { 
             width: 100%; 
@@ -80,7 +80,6 @@
         
         input[type="text"]:focus { border-color: var(--azul-governo); box-shadow: 0 0 8px rgba(11, 60, 102, 0.2); }
         
-        /* Botões */
         .btn-acao { 
             background-color: #28a745; 
             color: white; 
@@ -111,7 +110,6 @@
         }
         .btn-limpar:hover { color: var(--branco); border-color: var(--branco); background: rgba(255,255,255,0.1); }
 
-        /* Fila de Espera */
         .fila-box { 
             background: var(--branco); 
             color: #333; 
@@ -143,18 +141,38 @@
         .fila-item:hover { background-color: #f9f9f9; }
         .header { font-weight: bold; background: #f1f4f7; border-bottom: 2px solid var(--azul-governo); border-radius: 4px; }
         
-        b { color: var(--vermelho-governo); font-size: 16px; }
+        .senha-prioridade { color: var(--laranja-prioridade) !important; font-weight: 800; }
+        .senha-comum { color: var(--vermelho-governo); }
+
+        .radio-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
 
         .radio-group { 
-            margin: 20px 0; 
-            display: flex; 
-            justify-content: space-around; 
+            flex: 1;
             background: #f8f9fa;
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
+            border: 1px solid #eee;
         }
-        .radio-group label { color: #555; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-        .radio-group input { accent-color: var(--azul-governo); }
+
+        .radio-options {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 5px;
+        }
+
+        .radio-options label { 
+            font-size: 12px;
+            color: #555; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+        }
+        .radio-options input { accent-color: var(--azul-governo); }
 
     </style>
 </head>
@@ -177,10 +195,23 @@
             
             <div class="field-group"><label>Assunto / Tipo de Atendimento</label><input type="text" id="assunto" placeholder="Ex: Dossiê, Recadastramento, Informações"></div>
             
-            <div class="radio-group">
-                <label><input type="radio" name="tipo" value="EFETIVO" checked> EFETIVO</label>
-                <label><input type="radio" name="tipo" value="REDA"> REDA</label>
-                <label><input type="radio" name="tipo" value="INTERNO"> INTERNO</label>
+            <div class="radio-section">
+                <div class="radio-group">
+                    <label>Vínculo</label>
+                    <div class="radio-options">
+                        <label><input type="radio" name="tipo" value="EFETIVO" checked> EFETIVO</label>
+                        <label><input type="radio" name="tipo" value="REDA"> REDA</label>
+                        <label><input type="radio" name="tipo" value="INTERNO"> INT.</label>
+                    </div>
+                </div>
+
+                <div class="radio-group" style="border: 1px solid #ffeeba;">
+                    <label style="color: #856404;">Atendimento Prioritário?</label>
+                    <div class="radio-options">
+                        <label><input type="radio" name="prioridade" value="SIM"> SIM</label>
+                        <label><input type="radio" name="prioridade" value="NAO" checked> NÃO</label>
+                    </div>
+                </div>
             </div>
 
             <button class="btn-acao" onclick="gerarSenha()">Gerar Senha de Atendimento</button>
@@ -189,7 +220,7 @@
         <button class="btn-limpar" onclick="limparDadosDiaSeguinte()">Reiniciar sistema para novo dia</button>
 
         <div class="fila-box">
-            <div class="titulo-fila">Fila de Espera em Tempo Real</div>
+            <div class="titulo-fila">Fila de Espera em Tempo Real (Prioridades no Topo)</div>
             <div id="fila-espera"></div>
         </div>
     </div>
@@ -212,11 +243,15 @@
             if(!nome) return alert("Por favor, informe o nome do servidor!");
             
             const tipo = document.querySelector('input[name="tipo"]:checked').value;
+            const ehPrioridade = document.querySelector('input[name="prioridade"]:checked').value === "SIM";
             
             const store = db.transaction(["atendimentos"], "readonly").objectStore("atendimentos");
             store.getAll().onsuccess = (e) => {
                 const totalHoje = e.target.result.length + 1;
-                const senhaGerada = tipo[0] + String(totalHoje).padStart(3, '0');
+                
+                // Lógica de prefixo: P para prioridade, caso contrário a inicial do tipo
+                const prefixo = ehPrioridade ? "P" : tipo[0];
+                const senhaGerada = prefixo + String(totalHoje).padStart(3, '0');
 
                 const dados = {
                     senha: senhaGerada,
@@ -225,9 +260,10 @@
                     telefone: document.getElementById('telefone').value || "---",
                     assunto: document.getElementById('assunto').value.toUpperCase() || "GERAL",
                     tipo,
+                    prioridade: ehPrioridade,
                     status: "AGUARDANDO",
                     horaGeracao: new Date().toLocaleTimeString(),
-                    horaChamado: "---"
+                    timestamp: Date.now()
                 };
 
                 const transAdd = db.transaction(["atendimentos"], "readwrite");
@@ -245,10 +281,24 @@
             if (!db) return;
             const store = db.transaction("atendimentos", "readonly").objectStore("atendimentos");
             store.getAll().onsuccess = (e) => {
-                const lista = e.target.result.filter(i => i.status === "AGUARDANDO");
+                let lista = e.target.result.filter(i => i.status === "AGUARDANDO");
+                
+                // Ordenação: Prioritários primeiro, depois por ordem de chegada (timestamp)
+                lista.sort((a, b) => {
+                    if (a.prioridade === b.prioridade) return a.timestamp - b.timestamp;
+                    return a.prioridade ? -1 : 1;
+                });
+
                 let html = `<div class="fila-item header"><span>Senha</span><span>Nome</span><span>Assunto</span><span>Hora</span></div>`;
                 lista.forEach(p => {
-                    html += `<div class="fila-item"><b>${p.senha}</b><span>${p.nome}</span><span>${p.assunto}</span><span>${p.horaGeracao}</span></div>`;
+                    const classeSenha = p.prioridade ? "senha-prioridade" : "senha-comum";
+                    html += `
+                        <div class="fila-item">
+                            <b class="${classeSenha}">${p.senha}</b>
+                            <span>${p.nome} ${p.prioridade ? '⭐' : ''}</span>
+                            <span>${p.assunto}</span>
+                            <span>${p.horaGeracao}</span>
+                        </div>`;
                 });
                 document.getElementById('fila-espera').innerHTML = lista.length ? html : "<div style='padding:20px; color:#999'>Ninguém aguardando no momento.</div>";
             };
@@ -270,6 +320,7 @@
 
         function limparCampos() {
             ['nome', 'matricula', 'telefone', 'assunto'].forEach(id => document.getElementById(id).value = "");
+            document.getElementsByName('prioridade')[1].checked = true; // Volta para "Não"
             document.getElementById('nome').focus();
         }
     </script>
