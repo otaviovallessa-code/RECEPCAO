@@ -4,152 +4,132 @@
     <meta charset="UTF-8">
     <title>Painel de Atendimento - CPM</title>
     <style>
-        body {
-            background-color: #0b3c66;
-            color: white;
-            font-family: Arial, sans-serif;
-            margin: 0;
-            height: 100vh;
-            display: grid;
-            grid-template-columns: 3fr 1fr; /* Espaço maior para o chamado atual */
-            overflow: hidden;
-        }
-
-        /* Lado Esquerdo: Chamada Atual */
-        .painel-principal {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-right: 5px solid #ff0000;
-            padding: 20px;
-        }
-
-        .label-chamada { font-size: 40px; text-transform: uppercase; margin-bottom: 20px; }
+        body { background-color: #0b3c66; color: white; font-family: Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        .senha-atual {
-            font-size: 200px;
-            font-weight: bold;
-            color: #ff0000;
-            text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-            margin: 0;
-        }
-
-        .nome-atual {
-            font-size: 80px;
-            text-align: center;
-            margin-top: 20px;
-            text-transform: uppercase;
-        }
-
-        .assunto-atual {
-            font-size: 35px;
-            margin-top: 30px;
-            background: #d50000;
-            padding: 10px 40px;
-            border-radius: 50px;
-        }
-
-        /* Lado Direito: Histórico */
-        .historico {
-            background: #092d4d;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .historico h2 {
-            text-align: center;
-            border-bottom: 2px solid #ff0000;
-            padding-bottom: 10px;
-            font-size: 28px;
-        }
-
-        .lista-historico {
-            list-style: none;
-            padding: 0;
-            margin-top: 20px;
-        }
-
-        .historico-item {
-            background: rgba(255, 255, 255, 0.1);
-            margin-bottom: 15px;
-            padding: 15px;
-            border-radius: 8px;
-            animation: slideIn 0.5s ease;
-        }
-
-        .historico-senha { font-size: 32px; font-weight: bold; color: #ff0000; }
-        .historico-nome { font-size: 20px; display: block; }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
+        /* Cabeçalho */
+        .header-info { display: flex; justify-content: space-between; align-items: center; padding: 10px 30px; background: rgba(0, 0, 0, 0.3); border-bottom: 2px solid #ff0000; font-size: 24px; font-weight: bold; }
+        
+        .container-principal { display: grid; grid-template-columns: 3fr 1fr; flex-grow: 1; }
+        
+        /* Painel Central */
+        .painel-principal { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 5px solid #ff0000; padding: 20px; }
+        .label-chamada { font-size: 40px; text-transform: uppercase; margin-bottom: 20px; }
+        .senha-atual { font-size: 180px; font-weight: bold; color: #ff0000; text-shadow: 4px 4px 10px rgba(0,0,0,0.5); margin: 0; }
+        .nome-atual { font-size: 70px; text-align: center; margin-top: 10px; text-transform: uppercase; }
+        .assunto-atual { font-size: 30px; margin-top: 20px; background: #d50000; padding: 10px 40px; border-radius: 50px; }
+        
+        /* Histórico Lateral */
+        .historico { background: #092d4d; padding: 20px; display: flex; flex-direction: column; }
+        .historico h2 { text-align: center; border-bottom: 2px solid #ff0000; padding-bottom: 10px; font-size: 24px; }
+        .lista-historico { list-style: none; padding: 0; margin-top: 10px; }
+        .historico-item { background: rgba(255, 255, 255, 0.1); margin-bottom: 10px; padding: 10px; border-radius: 8px; animation: slideIn 0.5s ease; }
+        .historico-senha { font-size: 28px; font-weight: bold; color: #ff0000; }
+        
+        /* --- LETREIRO MAIS ÁGIL (30s) --- */
+        .marquee-container { background: #000; color: #ffeb3b; padding: 12px 0; font-size: 24px; font-weight: bold; white-space: nowrap; overflow: hidden; border-top: 2px solid #ff0000; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: marquee 30s linear infinite; }
+        
+        .tag-noticia { color: #fff; background: #004a8d; padding: 2px 8px; border-radius: 4px; margin-right: 10px; font-size: 18px; margin-left: 70px; }
+        .tag-adm { color: #000; background: #ffeb3b; padding: 2px 8px; border-radius: 4px; margin-right: 10px; font-size: 18px; margin-left: 70px; }
+        
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
 <body>
-
-    <div class="painel-principal">
-        <div class="label-chamada">Senha Atual</div>
-        <div id="senha" class="senha-atual">---</div>
-        <div id="nome" class="nome-atual">Aguardando...</div>
-        <div id="assunto" class="assunto-atual">Sistema de Atendimento CPM</div>
+    <div class="header-info">
+        <div id="data">--/--/----</div>
+        <div id="relogio">00:00:00</div>
+    </div>
+    
+    <div class="container-principal">
+        <div class="painel-principal">
+            <div class="label-chamada">Senha Atual</div>
+            <div id="senha" class="senha-atual">---</div>
+            <div id="nome" class="nome-atual">Aguardando...</div>
+            <div id="assunto" class="assunto-atual">Sistema de Atendimento CPM</div>
+        </div>
+        
+        <div class="historico">
+            <h2>Últimas Chamadas</h2>
+            <div id="lista-historico" class="lista-historico"></div>
+        </div>
+    </div>
+    
+    <div class="marquee-container">
+        <div id="letreiro" class="marquee-text">Carregando notícias da Educação BA...</div>
     </div>
 
-    <div class="historico">
-        <h2>Últimas Chamadas</h2>
-        <div id="lista-historico" class="lista-historico">
-            </div>
-    </div>
-
-    <audio id="audioNotificacao">
-        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="audioNotificacao"><source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg"></audio>
 
     <script>
         const canal = new BroadcastChannel('senha_channel');
         const audio = document.getElementById('audioNotificacao');
-        const historico = [];
+        let avisoAdmin = localStorage.getItem('aviso_adm') || "BEM-VINDO AO CPM - MANTENHA SEUS DOCUMENTOS EM MÃOS";
+        let listaNoticias = [];
 
-        canal.onmessage = (event) => {
-            const dados = event.data;
-            
-            // 1. Tocar Som
-            audio.play();
-
-            // 2. Atualizar Tela Principal
-            document.getElementById('senha').innerText = dados.senha;
-            document.getElementById('nome').innerText = dados.nome;
-            document.getElementById('assunto').innerText = dados.assunto;
-
-            // 3. Falar o nome (Opcional - Voz do Google/Windows)
-            const mensagemVoz = new SpeechSynthesisUtterance(`Senha ${dados.senha}, ${dados.nome}`);
-            window.speechSynthesis.speak(mensagemVoz);
-
-            // 4. Atualizar Histórico Lateral
-            adicionarAoHistorico(dados);
-        };
-
-        function adicionarAoHistorico(dados) {
-            const lista = document.getElementById('lista-historico');
-            
-            // Criar novo item
-            const div = document.createElement('div');
-            div.className = 'historico-item';
-            div.innerHTML = `
-                <span class="historico-senha">${dados.senha}</span>
-                <span class="historico-nome">${dados.nome}</span>
-            `;
-
-            // Inserir no topo da lista
-            lista.prepend(div);
-
-            // Limitar a 5 itens no histórico
-            if (lista.children.length > 5) {
-                lista.removeChild(lista.lastChild);
+        async function buscarNoticias() {
+            try {
+                const rssUrl = 'https://www.ba.gov.br/educacao/noticias/rss.xml';
+                const res = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`);
+                const data = await res.json();
+                
+                if(data.items && data.items.length > 0) {
+                    listaNoticias = data.items.map(i => i.title.toUpperCase());
+                } else {
+                    listaNoticias = ["SECRETARIA DA EDUCAÇÃO DO ESTADO DA BAHIA"];
+                }
+                atualizarLetreiro();
+            } catch { 
+                listaNoticias = ["NOTÍCIAS DA EDUCAÇÃO BA TEMPORARIAMENTE INDISPONÍVEIS"]; 
+                atualizarLetreiro(); 
             }
         }
+
+        function atualizarLetreiro() {
+            const container = document.getElementById('letreiro');
+            let conteudoFinal = "";
+            listaNoticias.forEach(noticia => {
+                conteudoFinal += `<span class="tag-adm">AVISO CPM</span> ${avisoAdmin.toUpperCase()} `;
+                conteudoFinal += `<span class="tag-noticia">EDUCAÇÃO BA</span> ${noticia} `;
+            });
+            container.innerHTML = conteudoFinal;
+        }
+
+        function atualizarRelogio() {
+            const agora = new Date();
+            document.getElementById('data').innerText = agora.toLocaleDateString('pt-br');
+            document.getElementById('relogio').innerText = agora.toLocaleTimeString('pt-br');
+        }
+
+        canal.onmessage = (event) => {
+            if (event.data.tipo === 'MUDAR_LETREIRO') {
+                avisoAdmin = event.data.novoTexto;
+                localStorage.setItem('aviso_adm', avisoAdmin);
+                atualizarLetreiro();
+                return;
+            }
+            audio.play();
+            document.getElementById('senha').innerText = event.data.senha;
+            document.getElementById('nome').innerText = event.data.nome;
+            document.getElementById('assunto').innerText = event.data.assunto;
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(`Senha ${event.data.senha}, ${event.data.nome}`));
+            adicionarAoHistorico(event.data);
+        };
+
+        function adicionarAoHistorico(d) {
+            const l = document.getElementById('lista-historico');
+            const div = document.createElement('div');
+            div.className = 'historico-item';
+            div.innerHTML = `<span class="historico-senha">${d.senha}</span><br><span style="font-size:14px">${d.nome}</span>`;
+            l.prepend(div);
+            if (l.children.length > 5) l.removeChild(l.lastChild);
+        }
+
+        setInterval(atualizarRelogio, 1000);
+        setInterval(buscarNoticias, 900000); 
+        atualizarRelogio();
+        buscarNoticias();
     </script>
 </body>
 </html>
