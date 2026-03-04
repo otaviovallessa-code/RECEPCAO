@@ -6,70 +6,71 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        :root { --azul: #0b3c66; --vermelho: #d50000; --branco: #ffffff; --cinza: #f4f4f4; }
-        body { background: var(--azul); color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        :root { --azul: #0b3c66; --vermelho: #d50000; --branco: #ffffff; }
+        body { background: var(--azul); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
         /* Dashboard */
-        .dashboard { display: flex; gap: 10px; width: 100%; max-width: 900px; margin-bottom: 20px; }
-        .card { background: var(--branco); color: var(--azul); flex: 1; padding: 15px; border-radius: 8px; text-align: center; border-bottom: 4px solid var(--vermelho); }
-        .card b { font-size: 26px; display: block; color: var(--vermelho); }
+        .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 950px; margin-bottom: 20px; }
+        .card { background: var(--branco); color: var(--azul); padding: 15px; border-radius: 8px; text-align: center; border-bottom: 4px solid var(--vermelho); }
+        .card b { font-size: 28px; display: block; color: var(--vermelho); }
+        .card span { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #666; }
 
-        /* Painel Chamando Agora */
-        .chamando-agora { background: #fffbcc; border: 2px solid #f1c40f; color: #333; width: 100%; max-width: 900px; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
-        .chamando-agora h2 { margin: 0; font-size: 14px; text-transform: uppercase; color: #666; }
-        .chamando-agora .senha { font-size: 48px; font-weight: bold; color: var(--vermelho); margin: 5px 0; }
-        .chamando-agora .nome { font-size: 20px; font-weight: bold; color: var(--azul); }
+        /* Chamando Agora */
+        .chamando-agora { background: #fffbcc; border: 2px solid #f1c40f; color: #333; width: 100%; max-width: 950px; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
+        .chamando-agora .senha { font-size: 54px; font-weight: bold; color: var(--vermelho); }
+        .chamando-agora .nome { font-size: 22px; font-weight: bold; color: var(--azul); }
 
-        .controle { background: var(--branco); color: #333; padding: 25px; border-radius: 12px; width: 100%; max-width: 900px; text-align: center; box-sizing: border-box; }
+        .controle { background: var(--branco); color: #333; padding: 25px; border-radius: 12px; width: 100%; max-width: 950px; text-align: center; box-sizing: border-box; }
         
         /* Botões */
-        .area-botoes { display: flex; gap: 10px; margin-bottom: 20px; }
-        .btn-call { border: none; padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; transition: 0.3s; }
+        .area-botoes { display: flex; gap: 15px; margin-bottom: 25px; }
+        .btn-call { border: none; padding: 22px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; flex: 1; }
         .btn-principal { background: var(--vermelho); color: white; flex: 2; }
-        .btn-interno { background: var(--azul); color: white; flex: 1; }
-        .btn-call:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-interno { background: var(--azul); color: white; }
         
-        /* Tabela de Fila */
-        .fila-container { width: 100%; margin-top: 20px; border-collapse: collapse; background: white; color: #333; border-radius: 8px; overflow: hidden; }
-        .fila-container th { background: #eee; padding: 12px; text-align: left; font-size: 13px; color: var(--azul); }
-        .fila-container td { padding: 12px; border-bottom: 1px solid #ddd; font-size: 14px; }
+        /* Tabelas */
+        .fila-container { width: 100%; margin-top: 10px; border-collapse: collapse; background: white; color: #333; }
+        .fila-container th { background: #f0f2f5; padding: 12px; text-align: left; font-size: 12px; color: var(--azul); }
+        .fila-container td { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; }
         .item-prio { background: #fff9c4; font-weight: bold; }
+
+        /* Histórico */
+        .historico-box { width: 100%; max-width: 950px; margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; }
+        .hist-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 13px; }
     </style>
 </head>
 <body>
 
     <div class="dashboard">
-        <div class="card"><b id="st-total">0</b><span>Atendidos</span></div>
         <div class="card"><b id="st-efe">0</b><span>Efetivos</span></div>
         <div class="card"><b id="st-reda">0</b><span>REDA</span></div>
+        <div class="card"><b id="st-int">0</b><span>Interno</span></div>
         <div class="card"><b id="st-prio">0</b><span>Prioridades</span></div>
     </div>
 
     <div class="chamando-agora" id="painel-chamada" style="display: none;">
-        <h2>Chamando Agora:</h2>
+        <div style="font-size: 12px; font-weight: bold; color: #888;">ATENDIMENTO ATUAL:</div>
         <div class="senha" id="now-senha">---</div>
-        <div class="nome" id="now-nome">Aguardando...</div>
+        <div class="nome" id="now-nome">...</div>
     </div>
 
     <div class="controle">
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--azul)">PAINEL DE ATENDIMENTO</div>
-        
         <div class="area-botoes">
             <button class="btn-call btn-principal" onclick="chamarProximo()">Próximo (Geral/Prio)</button>
-            <button class="btn-call btn-interno" onclick="chamarInterno()">Atendimento Interno</button>
+            <button class="btn-call btn-interno" onclick="chamarInterno()">Interno (Apenas "I")</button>
         </div>
         
         <table class="fila-container">
             <thead>
-                <tr>
-                    <th>SENHA</th>
-                    <th>NOME COMPLETO</th>
-                    <th>ASSUNTO</th>
-                    <th>HORA</th>
-                </tr>
+                <tr><th>SENHA</th><th>NOME</th><th>VÍNCULO</th><th>HORA</th></tr>
             </thead>
             <tbody id="corpo-fila"></tbody>
         </table>
+    </div>
+
+    <div class="historico-box">
+        <div style="font-weight: bold; margin-bottom: 10px; font-size: 12px; text-transform: uppercase; color: #fff;">🕒 Últimas 3 Chamadas</div>
+        <div id="lista-historico"></div>
     </div>
 
     <script>
@@ -77,41 +78,47 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let fila = [];
+        let filaGeral = [];
+        let filaInterna = [];
         let turnoEfetivo = true;
 
-        // Escutar Atendimentos e Fila
         db.ref('atendimentos').on('value', snap => {
-            fila = [];
-            let stats = { t:0, e:0, r:0, p:0 };
+            filaGeral = []; filaInterna = [];
+            let stats = { e:0, r:0, i:0, p:0 };
             let html = "";
+            let historico = [];
 
             snap.forEach(c => {
                 const v = c.val(); v.key = c.key;
                 if(v.status === "AGUARDANDO") {
-                    fila.push(v);
-                    html += `<tr class="${v.prioridade ? 'item-prio' : ''}">
-                        <td><b style="color:var(--vermelho)">${v.senha}</b></td>
-                        <td>${v.nome}</td>
-                        <td>${v.assunto}</td>
-                        <td>${v.hora}</td>
-                    </tr>`;
-                } else {
-                    stats.t++;
+                    if(v.tipo === "INTERNO") filaInterna.push(v);
+                    else filaGeral.push(v);
+                    html += `<tr class="${v.prioridade ? 'item-prio' : ''}"><td><b style="color:var(--vermelho)">${v.senha}</b></td><td>${v.nome}</td><td>${v.tipo}</td><td>${v.hora}</td></tr>`;
+                } else if(v.status === "CHAMADO") {
                     if(v.prioridade) stats.p++;
                     if(v.tipo === "EFETIVO") stats.e++;
                     if(v.tipo === "REDA") stats.r++;
+                    if(v.tipo === "INTERNO") stats.i++;
+                    historico.push(v);
                 }
             });
 
+            // Atualiza Dashboard e Fila
             document.getElementById('corpo-fila').innerHTML = html || "<tr><td colspan='4' style='text-align:center'>Fila vazia</td></tr>";
-            document.getElementById('st-total').innerText = stats.t;
             document.getElementById('st-efe').innerText = stats.e;
             document.getElementById('st-reda').innerText = stats.r;
+            document.getElementById('st-int').innerText = stats.i;
             document.getElementById('st-prio').innerText = stats.p;
+
+            // Atualiza Histórico (Últimos 3 atendidos, excluindo o atual)
+            historico.sort((a,b) => b.timestamp - a.timestamp);
+            let histHtml = "";
+            historico.slice(1, 4).forEach(h => {
+                histHtml += `<div class="hist-item"><span><b>${h.senha}</b> - ${h.nome}</span><span>${h.hora}</span></div>`;
+            });
+            document.getElementById('lista-historico').innerHTML = histHtml || "Nenhum histórico ainda.";
         });
 
-        // Escutar quem está sendo chamado agora (para exibir no painel)
         db.ref('senha_atual').on('value', snap => {
             const atual = snap.val();
             if (atual) {
@@ -121,38 +128,21 @@
             }
         });
 
-        function efetivarChamada(alvo) {
+        function efetivar(alvo) {
             db.ref('atendimentos/' + alvo.key).update({ status: "CHAMADO" });
-            db.ref('senha_atual').set({ 
-                senha: alvo.senha, 
-                nome: alvo.nome, 
-                assunto: alvo.assunto, 
-                timestamp: Date.now() 
-            });
+            db.ref('senha_atual').set({ senha: alvo.senha, nome: alvo.nome, timestamp: Date.now() });
         }
 
         function chamarProximo() {
-            if(fila.length === 0) return alert("Ninguém na fila");
-            
-            // Lógica: Prioridade primeiro, depois alterna entre Efetivo e REDA
-            let alvo = fila.find(x => x.prioridade) || 
-                       fila.find(x => turnoEfetivo ? x.tipo === "EFETIVO" : x.tipo === "REDA") || 
-                       fila[0];
-
-            efetivarChamada(alvo);
-            
-            if(!fila.find(x => x.prioridade)) turnoEfetivo = !turnoEfetivo;
+            if(filaGeral.length === 0) return alert("Fila Geral vazia.");
+            let alvo = filaGeral.find(x => x.prioridade) || filaGeral.find(x => turnoEfetivo ? x.tipo === "EFETIVO" : x.tipo === "REDA") || filaGeral[0];
+            efetivar(alvo);
+            if(!filaGeral.find(x => x.prioridade)) turnoEfetivo = !turnoEfetivo;
         }
 
         function chamarInterno() {
-            // Busca especificamente alguém do tipo INTERNO na fila
-            let alvoInterno = fila.find(x => x.tipo === "INTERNO");
-            
-            if(alvoInterno) {
-                efetivarChamada(alvoInterno);
-            } else {
-                alert("Nenhum atendimento INTERNO pendente na fila.");
-            }
+            if(filaInterna.length === 0) return alert("Não há internos na fila.");
+            efetivar(filaInterna[0]);
         }
     </script>
 </body>
