@@ -3,326 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <title>CPM - Triagem Governamental</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        :root {
-            --azul-governo: #0b3c66;
-            --vermelho-governo: #d50000;
-            --laranja-prioridade: #e67e22;
-            --branco: #ffffff;
-            --cinza-fundo: #f4f7f6;
-        }
-
-        body { 
-            background-color: var(--azul-governo); 
-            color: var(--branco); 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 0; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        header {
-            width: 100%;
-            padding: 30px 0;
-            background: linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 100%);
-            border-bottom: 4px solid var(--vermelho-governo);
-            margin-bottom: 40px;
-            text-align: center;
-        }
-
-        h1 { font-size: 32px; margin: 0; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        h2 { font-size: 18px; color: var(--branco); margin: 5px 0; opacity: 0.9; font-weight: 300; }
-        .badge-sec { 
-            background-color: var(--vermelho-governo); 
-            display: inline-block; 
-            padding: 5px 15px; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 14px; 
-            margin-top: 10px;
-        }
-
-        .main-content {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-            padding-bottom: 50px;
-        }
-
-        .form-container { 
-            background: var(--branco); 
-            padding: 35px; 
-            border-radius: 15px; 
-            width: 100%; 
-            max-width: 600px; 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-            color: #333;
-        }
-
-        .field-group { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 15px; }
-        label { font-size: 11px; font-weight: 700; color: var(--azul-governo); margin-bottom: 6px; text-transform: uppercase; }
-        
-        input[type="text"] { 
-            width: 100%; 
-            padding: 14px; 
-            box-sizing: border-box; 
-            font-size: 16px; 
-            border: 2px solid #e1e1e1; 
-            border-radius: 8px; 
-            outline: none; 
-            transition: 0.3s;
-        }
-        
-        input[type="text"]:focus { border-color: var(--azul-governo); box-shadow: 0 0 8px rgba(11, 60, 102, 0.2); }
-        
-        .btn-acao { 
-            background-color: #28a745; 
-            color: white; 
-            border: none; 
-            padding: 20px; 
-            font-size: 18px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            width: 100%; 
-            margin-top: 10px; 
-            text-transform: uppercase; 
-            transition: all 0.3s; 
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
-        }
-        .btn-acao:hover { background-color: #218838; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(40, 167, 69, 0.4); }
-
-        .btn-limpar { 
-            background: transparent;
-            color: rgba(255,255,255,0.6); 
-            border: 1px solid rgba(255,255,255,0.3); 
-            padding: 8px 15px; 
-            font-size: 11px; 
-            cursor: pointer; 
-            text-transform: uppercase; 
-            border-radius: 4px;
-            transition: 0.3s;
-        }
-        .btn-limpar:hover { color: var(--branco); border-color: var(--branco); background: rgba(255,255,255,0.1); }
-
-        .fila-box { 
-            background: var(--branco); 
-            color: #333; 
-            width: 100%; 
-            padding: 25px; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
-        }
-
-        .titulo-fila {
-            font-weight: bold; 
-            margin-bottom: 15px; 
-            font-size: 18px; 
-            text-align: left; 
-            color: var(--azul-governo); 
-            border-left: 5px solid var(--vermelho-governo);
-            padding-left: 15px;
-        }
-
-        .fila-item { 
-            display: grid; 
-            grid-template-columns: 100px 1fr 1fr 100px; 
-            border-bottom: 1px solid #eee; 
-            padding: 15px; 
-            font-size: 15px; 
-            text-align: left; 
-            transition: 0.2s;
-        }
-        .fila-item:hover { background-color: #f9f9f9; }
-        .header { font-weight: bold; background: #f1f4f7; border-bottom: 2px solid var(--azul-governo); border-radius: 4px; }
-        
-        .senha-prioridade { color: var(--laranja-prioridade) !important; font-weight: 800; }
-        .senha-comum { color: var(--vermelho-governo); }
-
-        .radio-section {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .radio-group { 
-            flex: 1;
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-        }
-
-        .radio-options {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 5px;
-        }
-
-        .radio-options label { 
-            font-size: 12px;
-            color: #555; 
-            cursor: pointer; 
-            display: flex; 
-            align-items: center; 
-            gap: 4px; 
-        }
-        .radio-options input { accent-color: var(--azul-governo); }
-
+        :root { --azul-governo: #0b3c66; --vermelho-governo: #d50000; --branco: #ffffff; }
+        body { background-color: var(--azul-governo); color: var(--branco); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; }
+        header { width: 100%; padding: 20px 0; border-bottom: 4px solid var(--vermelho-governo); text-align: center; background: rgba(0,0,0,0.1); }
+        .form-container { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; color: #333; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .field-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        label { font-size: 11px; font-weight: bold; color: var(--azul-governo); margin-bottom: 5px; }
+        input { padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 16px; }
+        .btn-acao { background: #28a745; color: white; border: none; padding: 15px; width: 100%; font-weight: bold; cursor: pointer; border-radius: 6px; font-size: 16px; }
+        .fila-box { width: 90%; max-width: 800px; background: white; color: #333; margin: 20px 0; padding: 15px; border-radius: 10px; }
+        .item { display: grid; grid-template-columns: 80px 1fr 1fr; border-bottom: 1px solid #eee; padding: 10px; }
     </style>
 </head>
 <body>
-
     <header>
-        <h1>GOVERNO DO ESTADO DA BAHIA</h1>
-        <h2>COORDENAÇÃO DE PROVIMENTO E MOVIMENTAÇÃO</h2>
-        <div class="badge-sec">SEC - TRIAGEM ATENDIMENTO</div>
+        <h1>GOVERNO DA BAHIA</h1>
+        <h3>TRIAGEM ONLINE - CPM</h3>
     </header>
 
-    <div class="main-content">
-        <div class="form-container">
-            <div class="field-group"><label>Nome do Requerente</label><input type="text" id="nome" placeholder="Digite o nome completo"></div>
-            
-            <div style="display:flex; gap:15px;">
-                <div class="field-group" style="flex:1;"><label>Matrícula</label><input type="text" id="matricula" placeholder="00.000.000"></div>
-                <div class="field-group" style="flex:1;"><label>Telefone</label><input type="text" id="telefone" placeholder="(71) 90000-0000"></div>
-            </div>
-            
-            <div class="field-group"><label>Assunto / Tipo de Atendimento</label><input type="text" id="assunto" placeholder="Ex: Dossiê, Recadastramento, Informações"></div>
-            
-            <div class="radio-section">
-                <div class="radio-group">
-                    <label>Vínculo</label>
-                    <div class="radio-options">
-                        <label><input type="radio" name="tipo" value="EFETIVO" checked> EFETIVO</label>
-                        <label><input type="radio" name="tipo" value="REDA"> REDA</label>
-                        <label><input type="radio" name="tipo" value="INTERNO"> INT.</label>
-                    </div>
-                </div>
-
-                <div class="radio-group" style="border: 1px solid #ffeeba;">
-                    <label style="color: #856404;">Atendimento Prioritário?</label>
-                    <div class="radio-options">
-                        <label><input type="radio" name="prioridade" value="SIM"> SIM</label>
-                        <label><input type="radio" name="prioridade" value="NAO" checked> NÃO</label>
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn-acao" onclick="gerarSenha()">Gerar Senha de Atendimento</button>
+    <div class="form-container">
+        <div class="field-group"><label>NOME</label><input type="text" id="nome"></div>
+        <div class="field-group"><label>VÍNCULO</label>
+            <select id="tipo" style="padding: 10px; border-radius: 6px;">
+                <option value="EFETIVO">EFETIVO</option>
+                <option value="REDA">REDA</option>
+                <option value="INTERNO">INTERNO</option>
+            </select>
         </div>
-
-        <button class="btn-limpar" onclick="limparDadosDiaSeguinte()">Reiniciar sistema para novo dia</button>
-
-        <div class="fila-box">
-            <div class="titulo-fila">Fila de Espera em Tempo Real (Prioridades no Topo)</div>
-            <div id="fila-espera"></div>
+        <div class="field-group"><label>PRIORIDADE?</label>
+            <select id="prioridade" style="padding: 10px; border-radius: 6px;">
+                <option value="NAO">NÃO</option>
+                <option value="SIM">SIM</option>
+            </select>
         </div>
+        <button class="btn-acao" onclick="gerarSenha()">GERAR SENHA</button>
+    </div>
+
+    <div class="fila-box">
+        <h4 style="color: var(--azul-governo)">FILA DE ESPERA ATUAL</h4>
+        <div id="lista-espera"></div>
     </div>
 
     <script>
-        const canal = new BroadcastChannel('fluxo_cpm');
-        let db;
-
-        const request = indexedDB.open("SistemaCPM_DB", 1);
-        request.onupgradeneeded = e => {
-            e.target.result.createObjectStore("atendimentos", { keyPath: "id", autoIncrement: true });
-        };
-        request.onsuccess = e => { 
-            db = e.target.result; 
-            carregarFila(); 
-        };
+        const firebaseConfig = { databaseURL: "https://sistemacpm-dd706-default-rtdb.firebaseio.com/"
+};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
         function gerarSenha() {
-            const nome = document.getElementById('nome').value.trim().toUpperCase();
-            if(!nome) return alert("Por favor, informe o nome do servidor!");
+            const nome = document.getElementById('nome').value.toUpperCase();
+            const tipo = document.getElementById('tipo').value;
+            const ehPrio = document.getElementById('prioridade').value === "SIM";
             
-            const tipo = document.querySelector('input[name="tipo"]:checked').value;
-            const ehPrioridade = document.querySelector('input[name="prioridade"]:checked').value === "SIM";
-            
-            const store = db.transaction(["atendimentos"], "readonly").objectStore("atendimentos");
-            store.getAll().onsuccess = (e) => {
-                const totalHoje = e.target.result.length + 1;
-                
-                // Lógica de prefixo: P para prioridade, caso contrário a inicial do tipo
-                const prefixo = ehPrioridade ? "P" : tipo[0];
-                const senhaGerada = prefixo + String(totalHoje).padStart(3, '0');
+            if(!nome) return alert("Preencha o nome!");
 
-                const dados = {
-                    senha: senhaGerada,
-                    nome,
-                    matricula: document.getElementById('matricula').value || "---",
-                    telefone: document.getElementById('telefone').value || "---",
-                    assunto: document.getElementById('assunto').value.toUpperCase() || "GERAL",
-                    tipo,
-                    prioridade: ehPrioridade,
+            db.ref('atendimentos').once('value', snapshot => {
+                const total = snapshot.numChildren() + 1;
+                const prefixo = ehPrio ? "P" : tipo[0];
+                const senha = prefixo + String(total).padStart(3, '0');
+
+                db.ref('atendimentos').push({
+                    senha, nome, tipo, prioridade: ehPrio,
                     status: "AGUARDANDO",
-                    horaGeracao: new Date().toLocaleTimeString(),
-                    timestamp: Date.now()
-                };
-
-                const transAdd = db.transaction(["atendimentos"], "readwrite");
-                transAdd.objectStore("atendimentos").add(dados);
-                
-                transAdd.oncomplete = () => {
-                    canal.postMessage({ acao: 'atualizar' });
-                    carregarFila();
-                    limparCampos();
-                };
-            };
-        }
-
-        function carregarFila() {
-            if (!db) return;
-            const store = db.transaction("atendimentos", "readonly").objectStore("atendimentos");
-            store.getAll().onsuccess = (e) => {
-                let lista = e.target.result.filter(i => i.status === "AGUARDANDO");
-                
-                // Ordenação: Prioritários primeiro, depois por ordem de chegada (timestamp)
-                lista.sort((a, b) => {
-                    if (a.prioridade === b.prioridade) return a.timestamp - b.timestamp;
-                    return a.prioridade ? -1 : 1;
+                    timestamp: Date.now(),
+                    hora: new Date().toLocaleTimeString()
                 });
-
-                let html = `<div class="fila-item header"><span>Senha</span><span>Nome</span><span>Assunto</span><span>Hora</span></div>`;
-                lista.forEach(p => {
-                    const classeSenha = p.prioridade ? "senha-prioridade" : "senha-comum";
-                    html += `
-                        <div class="fila-item">
-                            <b class="${classeSenha}">${p.senha}</b>
-                            <span>${p.nome} ${p.prioridade ? '⭐' : ''}</span>
-                            <span>${p.assunto}</span>
-                            <span>${p.horaGeracao}</span>
-                        </div>`;
-                });
-                document.getElementById('fila-espera').innerHTML = lista.length ? html : "<div style='padding:20px; color:#999'>Ninguém aguardando no momento.</div>";
-            };
+                document.getElementById('nome').value = "";
+            });
         }
 
-        function limparDadosDiaSeguinte() {
-            if (confirm("ATENÇÃO: Deseja apagar o histórico e reiniciar as senhas para um novo dia?")) {
-                const trans = db.transaction(["atendimentos"], "readwrite");
-                trans.objectStore("atendimentos").clear();
-                trans.oncomplete = () => {
-                    canal.postMessage({ acao: 'atualizar' });
-                    carregarFila();
-                    alert("Sistema resetado.");
-                };
-            }
-        }
-
-        canal.onmessage = () => carregarFila();
-
-        function limparCampos() {
-            ['nome', 'matricula', 'telefone', 'assunto'].forEach(id => document.getElementById(id).value = "");
-            document.getElementsByName('prioridade')[1].checked = true; // Volta para "Não"
-            document.getElementById('nome').focus();
-        }
+        // Atualiza a listagem local em tempo real
+        db.ref('atendimentos').on('value', snapshot => {
+            let html = "";
+            snapshot.forEach(child => {
+                const p = child.val();
+                if(p.status === "AGUARDANDO") {
+                    html += `<div class="item"><b>${p.senha}</b><span>${p.nome}</span><span>${p.tipo}</span></div>`;
+                }
+            });
+            document.getElementById('lista-espera').innerHTML = html || "Fila vazia";
+        });
     </script>
 </body>
 </html>

@@ -2,188 +2,78 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Sistema CPM - Atendimento</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <title>Controle de Chamada - Online</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { background-color: #0b3c66; color: white; font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }
-        h1 { font-size: 38px; margin: 10px 0; }
-        h2 { font-size: 22px; color: #ff0000; margin: 5px 0; font-weight: bold; }
-        
-        .form-container { background: rgba(255, 255, 255, 0.1); padding: 20px; border-radius: 8px; width: 550px; margin: 0 auto; border: 1px solid rgba(255,255,255,0.2); }
-        .status-grande { font-size: 40px; color: #ff0000; font-weight: bold; margin: 25px 0; min-height: 60px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); line-height: 1.2; }
-        
-        .btn-acao { background-color: #d50000; color: white; border: none; padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; text-transform: uppercase; transition: 0.3s; border-radius: 4px; }
-        .btn-acao:hover { background-color: #ff1a1a; transform: scale(1.02); }
-        
-        .btn-relatorio { background-color: #28a745; margin-top: 20px; width: 350px; border-radius: 5px; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; }
-
-        .fila-box { background: white; color: #333; width: 95%; max-width: 900px; margin: 30px auto; padding: 15px; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .fila-item { display: grid; grid-template-columns: 100px 2fr 1.5fr 1fr; border-bottom: 1px solid #ddd; padding: 10px; font-size: 14px; text-align: left; }
-        .header { font-weight: bold; background: #eee; border-bottom: 2px solid #0b3c66; }
-        
-        .senha-p { color: #e67e22; font-weight: bold; } /* Cor para destaque de prioridade */
-        .senha-comum { color: #d50000; }
-        
-        .badge-turno { font-size: 12px; opacity: 0.8; margin-top: 12px; display: block; font-style: italic; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; }
-        .aviso-prioridade { color: #ffc107; font-weight: bold; display: block; margin-bottom: 5px; font-size: 14px; }
+        body { font-family: sans-serif; background: #f4f7f6; text-align: center; }
+        .container { max-width: 600px; margin: 30px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .btn-chamar { background: #d50000; color: white; border: none; padding: 20px; width: 100%; font-size: 20px; font-weight: bold; cursor: pointer; border-radius: 8px; }
+        .espera-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd; }
+        .prio { color: orange; font-weight: bold; }
     </style>
 </head>
 <body>
-
-    <h1>GOVERNO DO ESTADO DA BAHIA</h1>
-    <h2>SEC - ATENDIMENTO CPM (CHAMADA)</h2>
-
-    <div class="form-container">
-        <div id="display-chamada" class="status-grande">AGUARDANDO...</div>
-        
-        <div id="alerta-fila"></div>
-
-        <button class="btn-acao" onclick="chamarAlternado()">CHAMAR PRÓXIMO</button>
-        
-        <button class="btn-acao" style="background:#0056b3" onclick="chamarInterno()">CHAMAR INTERNO</button>
-        
-        <button class="btn-relatorio" onclick="exportarExcel()">📊 BAIXAR RELATÓRIO EXCEL</button>
-        
-        <span id="proximo-tipo" class="badge-turno">Carregando fila...</span>
-    </div>
-
-    <div class="fila-box">
-        <div style="font-weight: bold; margin-bottom: 10px; font-size: 18px; text-align: left; color: #0b3c66;">Fila de Espera em Tempo Real:</div>
-        <div id="fila-atendimento"></div>
+    <div class="container">
+        <h2>SISTEMA DE CHAMADA</h2>
+        <div id="proximo" style="font-size: 24px; margin-bottom: 20px; color: #0b3c66;">Próximo da fila: <b id="nome-prox">--</b></div>
+        <button class="btn-chamar" onclick="chamarProximo()">CHAMAR PRÓXIMO</button>
+        <hr>
+        <h3>LISTA DE ESPERA</h3>
+        <div id="lista"></div>
+        <button onclick="resetarDia()" style="margin-top: 50px; opacity: 0.5;">Resetar Sistema (Novo Dia)</button>
     </div>
 
     <script>
-        const canal = new BroadcastChannel('fluxo_cpm');
-        const canalTV = new BroadcastChannel('senha_channel');
-        let db;
-        let proximoEhEfetivo = true;
+        const firebaseConfig = { databaseURL: "https://sistemacpm-dd706-default-rtdb.firebaseio.com/"
+};
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
 
-        const request = indexedDB.open("SistemaCPM_DB", 1);
-        request.onsuccess = e => { db = e.target.result; carregarFila(); };
+        let fila = [];
 
-        function carregarFila() {
-            if (!db) return;
-            const store = db.transaction("atendimentos", "readonly").objectStore("atendimentos");
-            store.getAll().onsuccess = (e) => {
-                const todos = e.target.result.filter(i => i.status === "AGUARDANDO");
-                
-                // Ordenar para exibição: Prioritários primeiro
-                todos.sort((a, b) => {
-                    if (a.prioridade === b.prioridade) return a.timestamp - b.timestamp;
-                    return a.prioridade ? -1 : 1;
-                });
+        db.ref('atendimentos').on('value', snapshot => {
+            fila = [];
+            snapshot.forEach(child => {
+                const item = child.val();
+                item.key = child.key;
+                if(item.status === "AGUARDANDO") fila.push(item);
+            });
 
-                let html = `<div class="fila-item header"><span>Senha</span><span>Nome</span><span>Assunto</span><span>Vínculo</span></div>`;
-                todos.forEach(p => {
-                    const classe = p.prioridade ? "senha-p" : "senha-comum";
-                    html += `<div class="fila-item"><b class="${classe}">${p.senha}</b><span>${p.nome} ${p.prioridade ? '⭐' : ''}</span><span>${p.assunto}</span><span>${p.tipo}</span></div>`;
-                });
-                
-                document.getElementById('fila-atendimento').innerHTML = todos.length ? html : "Ninguém aguardando.";
-                
-                atualizarIndicadorTurno(todos);
-            };
+            // Ordenação: Prioridade primeiro, depois por tempo
+            fila.sort((a,b) => (a.prioridade === b.prioridade) ? a.timestamp - b.timestamp : (a.prioridade ? -1 : 1));
+
+            document.getElementById('nome-prox').innerText = fila.length > 0 ? fila[0].senha + " - " + fila[0].nome : "Vazio";
+            
+            let html = "";
+            fila.forEach(f => {
+                html += `<div class="espera-item"><span>${f.senha}</span><span>${f.nome}</span></div>`;
+            });
+            document.getElementById('lista').innerHTML = html;
+        });
+
+        function chamarProximo() {
+            if(fila.length === 0) return alert("Ninguém na fila!");
+            const selecionado = fila[0];
+
+            // 1. Atualiza o status do paciente para ATENDIDO
+            db.ref('atendimentos/' + selecionado.key).update({ status: "ATENDIDO" });
+
+            // 2. Envia para o Painel da TV
+            db.ref('senha_atual').set({
+                senha: selecionado.senha,
+                nome: selecionado.nome,
+                hora: new Date().toLocaleTimeString(),
+                timestamp: Date.now()
+            });
         }
 
-        function atualizarIndicadorTurno(fila) {
-            const temPrioridade = fila.some(i => i.prioridade);
-            const alertaDiv = document.getElementById('alerta-fila');
-            
-            if (temPrioridade) {
-                alertaDiv.innerHTML = `<span class="aviso-prioridade">⚠️ EXISTE PRIORIDADE NA FILA</span>`;
-                document.getElementById('proximo-tipo').innerText = `A próxima chamada será: PRIORIDADE`;
-            } else {
-                alertaDiv.innerHTML = "";
-                const txt = proximoEhEfetivo ? "EFETIVO" : "REDA";
-                document.getElementById('proximo-tipo').innerText = `Turno atual (se não houver prioridade): ${txt}`;
+        function resetarDia() {
+            if(confirm("Deseja apagar TUDO?")) {
+                db.ref('atendimentos').remove();
+                db.ref('senha_atual').remove();
             }
         }
-
-        function chamarAlternado() {
-            const store = db.transaction("atendimentos", "readwrite").objectStore("atendimentos");
-            store.getAll().onsuccess = (e) => {
-                const fila = e.target.result.filter(i => i.status === "AGUARDANDO");
-                if (fila.length === 0) return alert("Não há ninguém aguardando!");
-
-                // 1. PRIORIDADE ABSOLUTA (Regra de Ouro)
-                const prioridades = fila.filter(i => i.prioridade).sort((a,b) => a.timestamp - b.timestamp);
-                
-                let selecionado;
-
-                if (prioridades.length > 0) {
-                    selecionado = prioridades[0];
-                    // Quando chama prioridade, não altera a vez do Efetivo/Reda
-                } else {
-                    // 2. LÓGICA DE ALTERNÂNCIA (Caso não haja prioridade)
-                    const efetivos = fila.filter(i => i.tipo === 'EFETIVO').sort((a,b) => a.timestamp - b.timestamp);
-                    const redas = fila.filter(i => i.tipo === 'REDA').sort((a,b) => a.timestamp - b.timestamp);
-
-                    if (proximoEhEfetivo) {
-                        selecionado = efetivos[0] || redas[0];
-                    } else {
-                        selecionado = redas[0] || efetivos[0];
-                    }
-
-                    // Alternar o turno apenas se ambos existirem na fila
-                    if (efetivos.length > 0 && redas.length > 0) {
-                        proximoEhEfetivo = !proximoEhEfetivo;
-                    }
-                }
-
-                if (selecionado) {
-                    finalizarChamada(selecionado);
-                }
-            };
-        }
-
-        function chamarInterno() {
-            const store = db.transaction("atendimentos", "readwrite").objectStore("atendimentos");
-            store.getAll().onsuccess = (e) => {
-                const selecionado = e.target.result.find(i => i.status === "AGUARDANDO" && i.tipo === 'INTERNO');
-                if (selecionado) {
-                    finalizarChamada(selecionado);
-                } else {
-                    alert("Não há atendimentos INTERNOS na fila!");
-                }
-            };
-        }
-
-        function finalizarChamada(selecionado) {
-            selecionado.status = "ATENDIDO";
-            selecionado.horaChamado = new Date().toLocaleTimeString();
-            
-            const trans = db.transaction("atendimentos", "readwrite");
-            trans.objectStore("atendimentos").put(selecionado);
-            
-            trans.oncomplete = () => {
-                document.getElementById('display-chamada').innerText = `${selecionado.senha} - ${selecionado.nome}`;
-                canalTV.postMessage(selecionado);
-                canal.postMessage({ acao: 'atualizar' });
-                carregarFila();
-            };
-        }
-
-        function exportarExcel() {
-            db.transaction("atendimentos", "readonly").objectStore("atendimentos").getAll().onsuccess = (e) => {
-                const dados = e.target.result.map(i => ({
-                    Senha: i.senha, 
-                    Nome: i.nome, 
-                    Matrícula: i.matricula, 
-                    Telefone: i.telefone, 
-                    Assunto: i.assunto, 
-                    Vínculo: i.tipo, 
-                    Prioridade: i.prioridade ? "SIM" : "NÃO",
-                    Chegada: i.horaGeracao, 
-                    Chamado: i.horaChamado || "Não chamado"
-                }));
-                const ws = XLSX.utils.json_to_sheet(dados);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Atendimentos");
-                XLSX.writeFile(wb, `Relatorio_CPM_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
-            };
-        }
-
-        canal.onmessage = () => carregarFila();
     </script>
 </body>
 </html>
