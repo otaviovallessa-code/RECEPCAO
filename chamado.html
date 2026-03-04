@@ -6,16 +6,28 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        :root { --azul: #0b3c66; --vermelho: #d50000; --branco: #ffffff; }
-        body { background: var(--azul); color: white; font-family: Arial; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        :root { --azul: #0b3c66; --vermelho: #d50000; --branco: #ffffff; --cinza: #f4f4f4; }
+        body { background: var(--azul); color: white; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         
         /* Dashboard */
         .dashboard { display: flex; gap: 10px; width: 100%; max-width: 900px; margin-bottom: 20px; }
         .card { background: var(--branco); color: var(--azul); flex: 1; padding: 15px; border-radius: 8px; text-align: center; border-bottom: 4px solid var(--vermelho); }
         .card b { font-size: 26px; display: block; color: var(--vermelho); }
 
-        .controle { background: var(--branco); color: #333; padding: 25px; border-radius: 12px; width: 100%; max-width: 900px; text-align: center; }
-        .btn-call { background: var(--vermelho); color: white; border: none; padding: 20px; font-size: 20px; font-weight: bold; width: 100%; cursor: pointer; border-radius: 8px; margin-bottom: 20px; }
+        /* Painel Chamando Agora */
+        .chamando-agora { background: #fffbcc; border: 2px solid #f1c40f; color: #333; width: 100%; max-width: 900px; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
+        .chamando-agora h2 { margin: 0; font-size: 14px; text-transform: uppercase; color: #666; }
+        .chamando-agora .senha { font-size: 48px; font-weight: bold; color: var(--vermelho); margin: 5px 0; }
+        .chamando-agora .nome { font-size: 20px; font-weight: bold; color: var(--azul); }
+
+        .controle { background: var(--branco); color: #333; padding: 25px; border-radius: 12px; width: 100%; max-width: 900px; text-align: center; box-sizing: border-box; }
+        
+        /* Botões */
+        .area-botoes { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-call { border: none; padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; transition: 0.3s; }
+        .btn-principal { background: var(--vermelho); color: white; flex: 2; }
+        .btn-interno { background: var(--azul); color: white; flex: 1; }
+        .btn-call:hover { opacity: 0.9; transform: translateY(-2px); }
         
         /* Tabela de Fila */
         .fila-container { width: 100%; margin-top: 20px; border-collapse: collapse; background: white; color: #333; border-radius: 8px; overflow: hidden; }
@@ -33,9 +45,19 @@
         <div class="card"><b id="st-prio">0</b><span>Prioridades</span></div>
     </div>
 
+    <div class="chamando-agora" id="painel-chamada" style="display: none;">
+        <h2>Chamando Agora:</h2>
+        <div class="senha" id="now-senha">---</div>
+        <div class="nome" id="now-nome">Aguardando...</div>
+    </div>
+
     <div class="controle">
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px; color: var(--azul)">PAINEL DE ATENDIMENTO</div>
-        <button class="btn-call" onclick="chamarProximo()">CHAMAR PRÓXIMA SENHA</button>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 15px; color: var(--azul)">PAINEL DE ATENDIMENTO</div>
+        
+        <div class="area-botoes">
+            <button class="btn-call btn-principal" onclick="chamarProximo()">Próximo (Geral/Prio)</button>
+            <button class="btn-call btn-interno" onclick="chamarInterno()">Atendimento Interno</button>
+        </div>
         
         <table class="fila-container">
             <thead>
@@ -46,8 +68,7 @@
                     <th>HORA</th>
                 </tr>
             </thead>
-            <tbody id="corpo-fila">
-                </tbody>
+            <tbody id="corpo-fila"></tbody>
         </table>
     </div>
 
@@ -59,6 +80,7 @@
         let fila = [];
         let turnoEfetivo = true;
 
+        // Escutar Atendimentos e Fila
         db.ref('atendimentos').on('value', snap => {
             fila = [];
             let stats = { t:0, e:0, r:0, p:0 };
@@ -89,17 +111,48 @@
             document.getElementById('st-prio').innerText = stats.p;
         });
 
+        // Escutar quem está sendo chamado agora (para exibir no painel)
+        db.ref('senha_atual').on('value', snap => {
+            const atual = snap.val();
+            if (atual) {
+                document.getElementById('painel-chamada').style.display = "block";
+                document.getElementById('now-senha').innerText = atual.senha;
+                document.getElementById('now-nome').innerText = atual.nome;
+            }
+        });
+
+        function efetivarChamada(alvo) {
+            db.ref('atendimentos/' + alvo.key).update({ status: "CHAMADO" });
+            db.ref('senha_atual').set({ 
+                senha: alvo.senha, 
+                nome: alvo.nome, 
+                assunto: alvo.assunto, 
+                timestamp: Date.now() 
+            });
+        }
+
         function chamarProximo() {
             if(fila.length === 0) return alert("Ninguém na fila");
             
+            // Lógica: Prioridade primeiro, depois alterna entre Efetivo e REDA
             let alvo = fila.find(x => x.prioridade) || 
                        fila.find(x => turnoEfetivo ? x.tipo === "EFETIVO" : x.tipo === "REDA") || 
                        fila[0];
 
-            db.ref('atendimentos/' + alvo.key).update({ status: "CHAMADO" });
-            db.ref('senha_atual').set({ senha: alvo.senha, nome: alvo.nome, assunto: alvo.assunto, timestamp: Date.now() });
+            efetivarChamada(alvo);
             
             if(!fila.find(x => x.prioridade)) turnoEfetivo = !turnoEfetivo;
+        }
+
+        function chamarInterno() {
+            // Busca especificamente alguém do tipo INTERNO na fila
+            let alvoInterno = fila.find(x => x.tipo === "INTERNO");
+            
+            if(alvoInterno) {
+                efetivarChamada(alvoInterno);
+            } else {
+                alert("Nenhum atendimento INTERNO pendente na fila.");
+            }
         }
     </script>
 </body>
