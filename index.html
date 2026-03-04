@@ -17,11 +17,19 @@
         .options { background: #f4f7f6; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #ddd; }
         .btn-gerar { background: var(--vermelho-ba); color: white; border: none; padding: 20px; font-size: 18px; font-weight: bold; width: 100%; border-radius: 8px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
         .btn-gerar:hover { background: #b30000; transform: scale(1.01); }
+        
+        /* Lista */
         .lista-container { width: 100%; max-width: 800px; margin-top: 40px; }
         .tabela-senhas { width: 100%; background: white; color: #333; border-collapse: collapse; border-radius: 8px; overflow: hidden; }
         .tabela-senhas th { background: #eee; padding: 12px; text-align: left; color: var(--azul-ba); font-size: 12px; }
         .tabela-senhas td { padding: 12px; border-bottom: 1px solid #ddd; font-size: 14px; }
-        .btn-admin { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; margin-top: 20px; }
+
+        /* Rodapé Admin */
+        .admin-footer { margin-top: 40px; display: flex; gap: 15px; width: 100%; max-width: 650px; padding-bottom: 50px; }
+        .btn-admin { flex: 1; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; transition: 0.3s; }
+        .btn-relatorio { background: #28a745; }
+        .btn-reset { background: #555; }
+        .btn-admin:hover { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -62,6 +70,7 @@
     </div>
 
     <div class="lista-container">
+        <h3 style="border-left: 5px solid var(--vermelho-ba); padding-left: 10px;">Senhas em Espera</h3>
         <table class="tabela-senhas">
             <thead>
                 <tr><th>SENHA</th><th>NOME</th><th>ASSUNTO</th><th>HORA</th></tr>
@@ -70,18 +79,22 @@
         </table>
     </div>
 
+    <div class="admin-footer">
+        <button class="btn-admin btn-relatorio" onclick="exportarRelatorio()">📊 RELATÓRIO DO DIA</button>
+        <button class="btn-admin btn-reset" onclick="resetarSistema()">♻️ ZERAR SISTEMA</button>
+    </div>
+
     <script>
         const firebaseConfig = { databaseURL: "https://sistemacpm-dd706-default-rtdb.firebaseio.com/" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Máscara de Telefone
+        // Máscaras
         document.getElementById('telefone').addEventListener('input', (e) => {
             let x = e.target.value.replace(/\D/g, '').match(/(\d{0,2})(\d{0,5})(\d{0,4})/);
             e.target.value = !x[2] ? x[1] : '(' + x[1] + ') ' + x[2] + (x[3] ? '-' + x[3] : '');
         });
 
-        // Máscara de Matrícula (00.000.000)
         document.getElementById('matricula').addEventListener('input', (e) => {
             let v = e.target.value.replace(/\D/g, '');
             if (v.length > 8) v = v.slice(0, 8);
@@ -99,7 +112,7 @@
                 prio: document.getElementById('prio')
             };
 
-            if(!campos.nome.value) return alert("Preencha o nome!");
+            if(!campos.nome.value) return alert("Por favor, preencha o nome!");
 
             const tipo = document.querySelector('input[name="tipo"]:checked').value;
             
@@ -120,21 +133,54 @@
                     hora: new Date().toLocaleTimeString(),
                     timestamp: Date.now()
                 }).then(() => {
-                    // LIMPEZA TOTAL
-                    Object.values(campos).forEach(c => c.type === 'checkbox' ? c.checked = false : c.value = "");
-                    alert("Senha: " + senha);
+                    // Limpeza completa dos campos
+                    campos.nome.value = "";
+                    campos.mat.value = "";
+                    campos.tel.value = "";
+                    campos.ass.value = "";
+                    campos.prio.checked = false;
+                    alert("Senha Gerada: " + senha);
                 });
             });
         }
 
+        // Lista em Tempo Real
         db.ref('atendimentos').on('value', snap => {
             let html = "";
             snap.forEach(c => {
                 const d = c.val();
-                if(d.status === "AGUARDANDO") html += `<tr><td><b>${d.senha}</b></td><td>${d.nome}</td><td>${d.assunto}</td><td>${d.hora}</td></tr>`;
+                if(d.status === "AGUARDANDO") {
+                    html += `<tr><td><b style="color:var(--vermelho-ba)">${d.senha}</b></td><td>${d.nome}</td><td>${d.assunto}</td><td>${d.hora}</td></tr>`;
+                }
             });
-            document.getElementById('corpo-tabela').innerHTML = html;
+            document.getElementById('corpo-tabela').innerHTML = html || '<tr><td colspan="4" style="text-align:center">Ninguém aguardando</td></tr>';
         });
+
+        // Função de Relatório
+        function exportarRelatorio() {
+            db.ref('atendimentos').once('value', snap => {
+                let csv = "\ufeffSenha;Nome;Matricula;Tipo;Assunto;Telefone;Hora;Status\n";
+                snap.forEach(c => { 
+                    const d = c.val(); 
+                    csv += `${d.senha};${d.nome};${d.matricula};${d.tipo};${d.assunto};${d.telefone};${d.hora};${d.status}\n`; 
+                });
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute("download", "Relatorio_CPM_Bahia.csv");
+                link.click();
+            });
+        }
+
+        // Função de Reset
+        function resetarSistema() {
+            if(confirm("ATENÇÃO: Deseja realmente apagar todos os dados do dia?") && prompt("Digite a senha de admin:") === "123") {
+                db.ref('atendimentos').remove();
+                db.ref('senha_atual').remove();
+                alert("Sistema resetado!");
+                location.reload();
+            }
+        }
     </script>
 </body>
 </html>
