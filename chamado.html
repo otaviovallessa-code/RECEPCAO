@@ -2,88 +2,173 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Controle de Atendimento - CPM</title>
+    <title>CPM - Painel de Controle</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        :root { --azul: #0b3c66; --vermelho: #d50000; }
-        body { font-family: 'Segoe UI', Arial; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { color: var(--azul); border-bottom: 2px solid var(--vermelho); padding-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #eee; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #ddd; }
-        .btn { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
-        .btn-chamar { background: var(--vermelho); color: white; }
-        .btn-chamar:hover { background: #a00000; }
-        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; background: #ffeeba; color: #856404; }
+        :root { --azul: #0b3c66; --vermelho: #d50000; --branco: #ffffff; }
+        body { background: var(--azul); color: white; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Dashboard */
+        .dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; max-width: 950px; margin-bottom: 20px; }
+        .card { background: var(--branco); color: var(--azul); padding: 15px; border-radius: 8px; text-align: center; border-bottom: 4px solid var(--vermelho); }
+        .card b { font-size: 28px; display: block; color: var(--vermelho); }
+        .card span { font-size: 11px; font-weight: bold; text-transform: uppercase; color: #666; }
+
+        /* Chamando Agora */
+        .chamando-agora { background: #fffbcc; border: 2px solid #f1c40f; color: #333; width: 100%; max-width: 950px; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
+        .chamando-agora .senha { font-size: 54px; font-weight: bold; color: var(--vermelho); line-height: 1; }
+        .chamando-agora .nome { font-size: 22px; font-weight: bold; color: var(--azul); margin-top: 10px; }
+        .chamando-agora .detalhe { font-size: 14px; color: #555; text-transform: uppercase; font-weight: bold; margin-top: 5px; }
+
+        .controle { background: var(--branco); color: #333; padding: 25px; border-radius: 12px; width: 100%; max-width: 950px; text-align: center; box-sizing: border-box; }
+        
+        /* Botões */
+        .area-botoes { display: flex; gap: 15px; margin-bottom: 25px; }
+        .btn-call { border: none; padding: 22px; font-size: 18px; font-weight: bold; cursor: pointer; border-radius: 8px; text-transform: uppercase; display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .btn-principal { background: var(--vermelho); color: white; flex: 2; }
+        .btn-interno { background: var(--azul); color: white; }
+        
+        /* Tabelas */
+        .fila-container { width: 100%; margin-top: 10px; border-collapse: collapse; background: white; color: #333; }
+        .fila-container th { background: #f0f2f5; padding: 12px; text-align: left; font-size: 12px; color: var(--azul); text-transform: uppercase; }
+        .fila-container td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; text-align: left; }
+        .item-prio { background: #fff9c4; font-weight: bold; }
+
+        /* Histórico */
+        .historico-box { width: 100%; max-width: 950px; margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; }
+        .hist-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 12px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <h2>Painel de Controle de Chamadas</h2>
-        <table>
+    <div class="dashboard">
+        <div class="card"><b id="st-efe">0</b><span>Efetivos</span></div>
+        <div class="card"><b id="st-reda">0</b><span>REDA</span></div>
+        <div class="card"><b id="st-int">0</b><span>Interno</span></div>
+        <div class="card"><b id="st-prio">0</b><span>Prioridades</span></div>
+    </div>
+
+    <div class="chamando-agora" id="painel-chamada" style="display: none;">
+        <div style="font-size: 12px; font-weight: bold; color: #888;">ATENDIMENTO ATUAL:</div>
+        <div class="senha" id="now-senha">---</div>
+        <div class="nome" id="now-nome">...</div>
+        <div class="detalhe" id="now-detalhe">VÍNCULO: --- | ASSUNTO: ---</div>
+    </div>
+
+    <div class="controle">
+        <div class="area-botoes">
+            <button class="btn-call btn-principal" onclick="chamarProximo()">Próximo (Geral/Prio)</button>
+            <button class="btn-call btn-interno" onclick="chamarInterno()">Interno (Apenas "I")</button>
+        </div>
+        
+        <table class="fila-container">
             <thead>
                 <tr>
                     <th>Senha</th>
-                    <th>Candidato</th>
-                    <th>Emissão</th>
-                    <th>Ação</th>
+                    <th>Nome</th>
+                    <th>Vínculo</th>
+                    <th>Assunto</th>
+                    <th>Hora</th>
                 </tr>
             </thead>
-            <tbody id="lista-atendimento"></tbody>
+            <tbody id="corpo-fila"></tbody>
         </table>
     </div>
-</div>
 
-<script>
-    const firebaseConfig = { databaseURL: "https://sistemacpm-dd706-default-rtdb.firebaseio.com/" };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    <div class="historico-box">
+        <div style="font-weight: bold; margin-bottom: 10px; font-size: 12px; text-transform: uppercase; color: #fff;">🕒 Últimas 3 Chamadas</div>
+        <div id="lista-historico"></div>
+    </div>
 
-    // Carrega a lista de quem está aguardando
-    db.ref('atendimentos').on('value', snap => {
-        let html = "";
-        snap.forEach(item => {
-            const d = item.val();
-            const key = item.key;
-            if (d.status === "AGUARDANDO") {
-                html += `
-                <tr>
-                    <td><b>${d.senha}</b></td>
-                    <td>${d.nome}</td>
-                    <td>${d.hora}</td>
-                    <td>
-                        <button class="btn btn-chamar" onclick="chamarProximo('${key}', '${d.senha}', '${d.nome}')">
-                            Chamar Agora
-                        </button>
-                    </td>
-                </tr>`;
+    <script>
+        const firebaseConfig = { databaseURL: "https://sistemacpm-dd706-default-rtdb.firebaseio.com/" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let filaGeral = [];
+        let filaInterna = [];
+        let turnoEfetivo = true;
+
+        db.ref('atendimentos').on('value', snap => {
+            filaGeral = []; filaInterna = [];
+            let stats = { e:0, r:0, i:0, p:0 };
+            let html = "";
+            let historico = [];
+
+            snap.forEach(c => {
+                const v = c.val(); v.key = c.key;
+                if(v.status === "AGUARDANDO") {
+                    if(v.tipo === "INTERNO") filaInterna.push(v);
+                    else filaGeral.push(v);
+                    
+                    html += `<tr class="${v.prioridade ? 'item-prio' : ''}">
+                        <td><b style="color:var(--vermelho)">${v.senha}</b></td>
+                        <td>${v.nome}</td>
+                        <td>${v.tipo}</td>
+                        <td>${v.assunto || "GERAL"}</td>
+                        <td>${v.hora}</td>
+                    </tr>`;
+                } else if(v.status === "CHAMADO") {
+                    if(v.prioridade) stats.p++;
+                    if(v.tipo === "EFETIVO") stats.e++;
+                    if(v.tipo === "REDA") stats.r++;
+                    if(v.tipo === "INTERNO") stats.i++;
+                    historico.push(v);
+                }
+            });
+
+            // Atualiza Dashboard e Fila
+            document.getElementById('corpo-fila').innerHTML = html || "<tr><td colspan='5' style='text-align:center'>Fila vazia</td></tr>";
+            document.getElementById('st-efe').innerText = stats.e;
+            document.getElementById('st-reda').innerText = stats.r;
+            document.getElementById('st-int').innerText = stats.i;
+            document.getElementById('st-prio').innerText = stats.p;
+
+            // Atualiza Histórico (Últimos 3 atendidos, excluindo o atual)
+            historico.sort((a,b) => b.timestamp - a.timestamp);
+            let histHtml = "";
+            historico.slice(1, 4).forEach(h => {
+                histHtml += `<div class="hist-item">
+                    <span><b>${h.senha}</b> - ${h.nome} (${h.assunto || "GERAL"})</span>
+                    <span>${h.hora}</span>
+                </div>`;
+            });
+            document.getElementById('lista-historico').innerHTML = histHtml || "Nenhum histórico ainda.";
+        });
+
+        db.ref('senha_atual').on('value', snap => {
+            const atual = snap.val();
+            if (atual) {
+                document.getElementById('painel-chamada').style.display = "block";
+                document.getElementById('now-senha').innerText = atual.senha;
+                document.getElementById('now-nome').innerText = atual.nome;
+                document.getElementById('now-detalhe').innerText = `VÍNCULO: ${atual.tipo} | ASSUNTO: ${atual.assunto || "GERAL"}`;
             }
         });
-        document.getElementById('lista-atendimento').innerHTML = html || '<tr><td colspan="4">Nenhuma senha aguardando.</td></tr>';
-    });
 
-    function chamarProximo(id, senha, nome) {
-        const agora = new Date().toLocaleTimeString('pt-br');
-        
-        // 1. Atualiza o registro individual com a hora do chamado para o relatório
-        db.ref('atendimentos/' + id).update({
-            status: "CHAMADO",
-            hora_chamado: agora
-        });
+        function efetivar(alvo) {
+            db.ref('atendimentos/' + alvo.key).update({ status: "CHAMADO" });
+            db.ref('senha_atual').set({ 
+                senha: alvo.senha, 
+                nome: alvo.nome, 
+                tipo: alvo.tipo, 
+                assunto: alvo.assunto || "GERAL",
+                timestamp: Date.now() 
+            });
+        }
 
-        // 2. Envia para o Painel da TV (Gatilho para som e alerta visual)
-        db.ref('senha_atual').set({
-            senha: senha,
-            nome: nome,
-            timestamp: Date.now()
-        });
-    }
-</script>
+        function chamarProximo() {
+            if(filaGeral.length === 0) return alert("Fila Geral vazia.");
+            let alvo = filaGeral.find(x => x.prioridade) || filaGeral.find(x => turnoEfetivo ? x.tipo === "EFETIVO" : x.tipo === "REDA") || filaGeral[0];
+            efetivar(alvo);
+            if(!filaGeral.find(x => x.prioridade)) turnoEfetivo = !turnoEfetivo;
+        }
 
+        function chamarInterno() {
+            if(filaInterna.length === 0) return alert("Não há internos na fila.");
+            efetivar(filaInterna[0]);
+        }
+    </script>
 </body>
 </html>
