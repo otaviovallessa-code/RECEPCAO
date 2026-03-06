@@ -29,7 +29,6 @@
         .scroll { display: inline-block; padding-left: 100%; animation: scroll 25s linear infinite; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
         
-        #assunto { font-size: 38px; background: var(--vermelho-ba); padding: 15px 60px; border-radius: 60px; margin-top: 35px; font-weight: bold; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 3px solid #fff; }
         .hist-item { font-size: 30px; margin-bottom: 25px; border-bottom: 2px solid #1a4a75; padding-bottom: 15px; animation: fadeIn 0.8s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -60,8 +59,7 @@
             <div style="font-size:50px; letter-spacing: 8px; font-weight: bold; color: var(--amarelo);">SENHA</div>
             <div id="senha" class="senha">---</div>
             <div id="nome" class="nome">Aguardando...</div>
-            <div id="assunto">Sincronizando...</div>
-        </div>
+            </div>
         <div class="historico">
             <h2 style="border-bottom:4px solid var(--vermelho-ba); font-size: 35px; margin-top: 0; padding-bottom: 10px; color: var(--amarelo);">ÚLTIMAS</h2>
             <div id="lista-hist"></div>
@@ -97,14 +95,12 @@
 
             document.getElementById('senha').innerText = d.senha;
             document.getElementById('nome').innerText = d.nome;
-            document.getElementById('assunto').innerText = d.assunto || "ATENDIMENTO";
 
             if(d.timestamp > lastTs) {
                 if(audioLiberado && lastTs !== 0) {
-                    // Dispara o alerta visual (piscar tela)
                     const body = document.getElementById('painel-body');
                     body.classList.remove('alerta-visual');
-                    void body.offsetWidth; // Truque para resetar a animação
+                    void body.offsetWidth; 
                     body.classList.add('alerta-visual');
 
                     const audio = document.getElementById('som-alerta');
