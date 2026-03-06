@@ -17,8 +17,9 @@
 
         /* Chamando Agora */
         .chamando-agora { background: #fffbcc; border: 2px solid #f1c40f; color: #333; width: 100%; max-width: 950px; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
-        .chamando-agora .senha { font-size: 54px; font-weight: bold; color: var(--vermelho); }
-        .chamando-agora .nome { font-size: 22px; font-weight: bold; color: var(--azul); }
+        .chamando-agora .senha { font-size: 54px; font-weight: bold; color: var(--vermelho); line-height: 1; }
+        .chamando-agora .nome { font-size: 22px; font-weight: bold; color: var(--azul); margin-top: 10px; }
+        .chamando-agora .detalhe { font-size: 14px; color: #555; text-transform: uppercase; font-weight: bold; margin-top: 5px; }
 
         .controle { background: var(--branco); color: #333; padding: 25px; border-radius: 12px; width: 100%; max-width: 950px; text-align: center; box-sizing: border-box; }
         
@@ -30,13 +31,13 @@
         
         /* Tabelas */
         .fila-container { width: 100%; margin-top: 10px; border-collapse: collapse; background: white; color: #333; }
-        .fila-container th { background: #f0f2f5; padding: 12px; text-align: left; font-size: 12px; color: var(--azul); }
-        .fila-container td { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; }
+        .fila-container th { background: #f0f2f5; padding: 12px; text-align: left; font-size: 12px; color: var(--azul); text-transform: uppercase; }
+        .fila-container td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; text-align: left; }
         .item-prio { background: #fff9c4; font-weight: bold; }
 
         /* Histórico */
         .historico-box { width: 100%; max-width: 950px; margin-top: 20px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; }
-        .hist-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 13px; }
+        .hist-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.2); font-size: 12px; }
     </style>
 </head>
 <body>
@@ -52,6 +53,7 @@
         <div style="font-size: 12px; font-weight: bold; color: #888;">ATENDIMENTO ATUAL:</div>
         <div class="senha" id="now-senha">---</div>
         <div class="nome" id="now-nome">...</div>
+        <div class="detalhe" id="now-detalhe">VÍNCULO: --- | ASSUNTO: ---</div>
     </div>
 
     <div class="controle">
@@ -62,7 +64,13 @@
         
         <table class="fila-container">
             <thead>
-                <tr><th>SENHA</th><th>NOME</th><th>VÍNCULO</th><th>HORA</th></tr>
+                <tr>
+                    <th>Senha</th>
+                    <th>Nome</th>
+                    <th>Vínculo</th>
+                    <th>Assunto</th>
+                    <th>Hora</th>
+                </tr>
             </thead>
             <tbody id="corpo-fila"></tbody>
         </table>
@@ -93,7 +101,14 @@
                 if(v.status === "AGUARDANDO") {
                     if(v.tipo === "INTERNO") filaInterna.push(v);
                     else filaGeral.push(v);
-                    html += `<tr class="${v.prioridade ? 'item-prio' : ''}"><td><b style="color:var(--vermelho)">${v.senha}</b></td><td>${v.nome}</td><td>${v.tipo}</td><td>${v.hora}</td></tr>`;
+                    
+                    html += `<tr class="${v.prioridade ? 'item-prio' : ''}">
+                        <td><b style="color:var(--vermelho)">${v.senha}</b></td>
+                        <td>${v.nome}</td>
+                        <td>${v.tipo}</td>
+                        <td>${v.assunto || "GERAL"}</td>
+                        <td>${v.hora}</td>
+                    </tr>`;
                 } else if(v.status === "CHAMADO") {
                     if(v.prioridade) stats.p++;
                     if(v.tipo === "EFETIVO") stats.e++;
@@ -104,7 +119,7 @@
             });
 
             // Atualiza Dashboard e Fila
-            document.getElementById('corpo-fila').innerHTML = html || "<tr><td colspan='4' style='text-align:center'>Fila vazia</td></tr>";
+            document.getElementById('corpo-fila').innerHTML = html || "<tr><td colspan='5' style='text-align:center'>Fila vazia</td></tr>";
             document.getElementById('st-efe').innerText = stats.e;
             document.getElementById('st-reda').innerText = stats.r;
             document.getElementById('st-int').innerText = stats.i;
@@ -114,7 +129,10 @@
             historico.sort((a,b) => b.timestamp - a.timestamp);
             let histHtml = "";
             historico.slice(1, 4).forEach(h => {
-                histHtml += `<div class="hist-item"><span><b>${h.senha}</b> - ${h.nome}</span><span>${h.hora}</span></div>`;
+                histHtml += `<div class="hist-item">
+                    <span><b>${h.senha}</b> - ${h.nome} (${h.assunto || "GERAL"})</span>
+                    <span>${h.hora}</span>
+                </div>`;
             });
             document.getElementById('lista-historico').innerHTML = histHtml || "Nenhum histórico ainda.";
         });
@@ -125,12 +143,19 @@
                 document.getElementById('painel-chamada').style.display = "block";
                 document.getElementById('now-senha').innerText = atual.senha;
                 document.getElementById('now-nome').innerText = atual.nome;
+                document.getElementById('now-detalhe').innerText = `VÍNCULO: ${atual.tipo} | ASSUNTO: ${atual.assunto || "GERAL"}`;
             }
         });
 
         function efetivar(alvo) {
             db.ref('atendimentos/' + alvo.key).update({ status: "CHAMADO" });
-            db.ref('senha_atual').set({ senha: alvo.senha, nome: alvo.nome, timestamp: Date.now() });
+            db.ref('senha_atual').set({ 
+                senha: alvo.senha, 
+                nome: alvo.nome, 
+                tipo: alvo.tipo, 
+                assunto: alvo.assunto || "GERAL",
+                timestamp: Date.now() 
+            });
         }
 
         function chamarProximo() {
