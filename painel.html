@@ -6,58 +6,61 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { background: #0b3c66; color: white; font-family: Arial; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .header { display: flex; justify-content: space-between; padding: 15px 30px; background: rgba(0,0,0,0.3); border-bottom: 3px solid #ff0000; font-size: 24px; }
+        body { background: #0b3c66; color: white; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .header { display: flex; justify-content: space-between; padding: 15px 30px; background: rgba(0,0,0,0.3); border-bottom: 3px solid #ff0000; font-size: 24px; font-weight: bold; }
         .main { display: grid; grid-template-columns: 3fr 1fr; flex-grow: 1; }
-        .chamada { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 5px solid #ff0000; text-align: center; }
-        .senha { font-size: 200px; font-weight: bold; color: #ff0000; margin: 0; line-height: 1; }
-        .nome { font-size: 60px; text-transform: uppercase; margin-top: 10px; padding: 0 20px; }
-        .historico { background: #092d4d; padding: 20px; overflow: hidden; }
+        .chamada { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 5px solid #ff0000; text-align: center; background: radial-gradient(circle, #0e4a7d 0%, #0b3c66 100%); }
+        .senha { font-size: 220px; font-weight: 900; color: #ff0000; margin: 0; line-height: 0.9; text-shadow: 4px 4px 10px rgba(0,0,0,0.5); }
+        .nome { font-size: 65px; text-transform: uppercase; margin-top: 20px; padding: 0 40px; font-weight: bold; color: #fff; }
+        .historico { background: #092d4d; padding: 25px; overflow: hidden; box-shadow: inset 5px 0 15px rgba(0,0,0,0.3); }
         
         /* Letreiro */
-        .marquee { background: #000; color: #ffeb3b; padding: 15px; font-size: 28px; font-weight: bold; white-space: nowrap; overflow: hidden; border-top: 3px solid #ff0000; }
-        .scroll { display: inline-block; padding-left: 100%; animation: scroll 20s linear infinite; }
+        .marquee { background: #000; color: #ffeb3b; padding: 18px; font-size: 32px; font-weight: bold; white-space: nowrap; overflow: hidden; border-top: 4px solid #ff0000; }
+        .scroll { display: inline-block; padding-left: 100%; animation: scroll 25s linear infinite; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
         
-        #assunto { font-size: 35px; background: #d50000; padding: 15px 50px; border-radius: 50px; margin-top: 30px; font-weight: bold; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .hist-item { font-size: 28px; margin-bottom: 20px; border-bottom: 1px solid #1a4a75; padding-bottom: 10px; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        #assunto { font-size: 38px; background: #d50000; padding: 15px 60px; border-radius: 60px; margin-top: 35px; font-weight: bold; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 3px solid #fff; }
+        .hist-item { font-size: 30px; margin-bottom: 25px; border-bottom: 2px solid #1a4a75; padding-bottom: 15px; animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Camada de desbloqueio de áudio */
+        /* Overlay de Ativação */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); color: #ffeb3b;
+            background: rgba(11, 60, 102, 0.98); color: #ffeb3b;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; text-align: center;
+            z-index: 9999; cursor: pointer; text-align: center;
         }
+        .btn-ativar { background: #ff0000; color: white; padding: 30px 60px; border-radius: 15px; font-size: 35px; font-weight: bold; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 30px; }
     </style>
 </head>
 <body>
 
     <div id="overlay" onclick="iniciarSistema()">
-        <h1>SISTEMA CPM ONLINE</h1>
-        <p style="font-size: 24px;">CLIQUE EM QUALQUER LUGAR PARA ATIVAR O SOM E O PAINEL</p>
+        <h1 style="font-size: 60px; margin: 0;">SISTEMA CPM ONLINE</h1>
+        <p style="font-size: 28px; color: white;">PAINEL DE CHAMADA DE SENHAS</p>
+        <button class="btn-ativar">CLIQUE PARA INICIAR O SOM</button>
+        <p style="font-size: 18px; color: #aaa; margin-top: 20px;">(Necessário para liberar o áudio no navegador)</p>
     </div>
 
     <div class="header">
-        <div>SISTEMA CPM - GOVERNO DA BAHIA</div>
+        <div>SISTEMA CPM - GOVERNO DO ESTADO DA BAHIA</div>
         <div id="relogio">00:00:00</div>
     </div>
 
     <div class="main">
         <div class="chamada">
-            <div style="font-size:45px; letter-spacing: 5px;">SENHA</div>
+            <div style="font-size:50px; letter-spacing: 8px; font-weight: bold; color: #ffeb3b;">SENHA</div>
             <div id="senha" class="senha">---</div>
             <div id="nome" class="nome">Aguardando...</div>
             <div id="assunto">Sincronizando...</div>
         </div>
         <div class="historico">
-            <h2 style="border-bottom:2px solid #ff0000; font-size: 30px; margin-top: 0;">ÚLTIMAS</h2>
+            <h2 style="border-bottom:4px solid #ff0000; font-size: 35px; margin-top: 0; padding-bottom: 10px; color: #ffeb3b;">ÚLTIMAS</h2>
             <div id="lista-hist"></div>
         </div>
     </div>
 
-    <div class="marquee"><div id="letreiro" class="scroll">AGUARDANDO ATUALIZAÇÃO DO LETREIRO...</div></div>
+    <div class="marquee"><div id="letreiro" class="scroll">BEM-VINDO AO SISTEMA DE ATENDIMENTO CPM - AGUARDANDO ATUALIZAÇÕES...</div></div>
     
     <audio id="som-alerta" preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
@@ -73,10 +76,19 @@
         function iniciarSistema() {
             document.getElementById('overlay').style.display = 'none';
             audioLiberado = true;
-            // Toca um som mudo ou curto apenas para validar o contexto de áudio
-            const audio = document.getElementById('som-alerta');
-            audio.play().then(() => audio.pause());
-            console.log("Áudio liberado pelo usuário.");
+            
+            // Força a liberação do canal de áudio
+            const som = document.getElementById('som-alerta');
+            som.play().then(() => {
+                som.pause();
+                som.currentTime = 0;
+            });
+
+            // "Acorda" a sintetização de voz
+            if ('speechSynthesis' in window) {
+                const warmup = new SpeechSynthesisUtterance("");
+                window.speechSynthesis.speak(warmup);
+            }
         }
 
         // 1. Escuta a Senha Atual
@@ -88,24 +100,26 @@
             if(d.timestamp > lastTs) {
                 document.getElementById('senha').innerText = d.senha;
                 document.getElementById('nome').innerText = d.nome;
-                document.getElementById('assunto').innerText = d.assunto;
+                document.getElementById('assunto').innerText = d.assunto || "ATENDIMENTO";
                 
-                if(audioLiberado) {
+                if(audioLiberado && lastTs !== 0) {
                     const audio = document.getElementById('som-alerta');
                     audio.currentTime = 0;
                     audio.play().then(() => {
-                        // Espera 1.5 segundos após o sino para falar
-                        setTimeout(() => falarSenha(d.senha, d.nome), 1500);
-                    }).catch(e => console.log("Erro ao tocar áudio:", e));
+                        // Aguarda 1.2s para começar a falar o nome
+                        setTimeout(() => falarSenha(d.senha, d.nome), 1200);
+                    }).catch(e => console.log("Erro de Autoplay:", e));
                 }
 
-                atualizarHistorico(d.senha, d.nome);
+                if(lastTs !== 0) { 
+                    atualizarHistorico(d.senha, d.nome);
+                }
                 lastTs = d.timestamp;
             } else {
-                // Primeira carga da página (apenas exibe, não toca som)
+                // Primeira carga do painel
                 document.getElementById('senha').innerText = d.senha;
                 document.getElementById('nome').innerText = d.nome;
-                document.getElementById('assunto').innerText = d.assunto;
+                document.getElementById('assunto').innerText = d.assunto || "ATENDIMENTO";
                 lastTs = d.timestamp;
             }
         });
@@ -119,12 +133,13 @@
         function atualizarHistorico(senha, nome) {
             const lista = document.getElementById('lista-hist');
             const nomes = nome.split(' ');
+            // Formata nome para exibir apenas Primeiro e Último nome no histórico
             const formatado = nomes.length > 1 ? `${nomes[0]} ${nomes[nomes.length - 1]}` : nomes[0];
             
             const novoItem = document.createElement('div');
             novoItem.className = 'hist-item';
-            novoItem.innerHTML = `<b style="color:#ff0000; font-size:35px">${senha}</b><br>
-                                  <span style="font-size:20px; text-transform:uppercase;">${formatado}</span>`;
+            novoItem.innerHTML = `<b style="color:#ffeb3b; font-size:40px">${senha}</b><br>
+                                  <span style="font-size:22px; text-transform:uppercase; color: #fff;">${formatado}</span>`;
             
             lista.insertBefore(novoItem, lista.firstChild);
             if(lista.children.length > 5) lista.removeChild(lista.lastChild);
@@ -133,21 +148,21 @@
         function falarSenha(senha, nome) {
             if (!('speechSynthesis' in window)) return;
             
-            window.speechSynthesis.cancel(); // Para falas anteriores
+            window.speechSynthesis.cancel(); 
             
-            // Soletrar a senha para ficar claro (ex: P 0 1)
+            // Soletrar a senha para maior clareza (Ex: P zero um)
             const senhaSoletrada = senha.toString().split('').join(' ');
             const texto = `Senha, ${senhaSoletrada}. ${nome}.`;
             
             const msg = new SpeechSynthesisUtterance(texto);
             msg.lang = 'pt-BR';
-            msg.rate = 0.8; // Velocidade levemente reduzida
-            msg.pitch = 1;
+            msg.rate = 0.85; // Velocidade ideal para compreensão
+            msg.pitch = 1.0;
             
             window.speechSynthesis.speak(msg);
         }
 
-        // Relógio
+        // Relógio em tempo real
         setInterval(() => {
             document.getElementById('relogio').innerText = new Date().toLocaleTimeString('pt-br');
         }, 1000);
