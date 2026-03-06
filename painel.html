@@ -14,7 +14,7 @@
         .nome { font-size: 60px; text-transform: uppercase; margin-top: 10px; padding: 0 20px; }
         .historico { background: #092d4d; padding: 20px; overflow: hidden; }
         
-        /* Letreiro Ajustado */
+        /* Letreiro */
         .marquee { background: #000; color: #ffeb3b; padding: 15px; font-size: 28px; font-weight: bold; white-space: nowrap; overflow: hidden; border-top: 3px solid #ff0000; }
         .scroll { display: inline-block; padding-left: 100%; animation: scroll 20s linear infinite; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
@@ -22,13 +22,28 @@
         #assunto { font-size: 35px; background: #d50000; padding: 15px 50px; border-radius: 50px; margin-top: 30px; font-weight: bold; text-transform: uppercase; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .hist-item { font-size: 28px; margin-bottom: 20px; border-bottom: 1px solid #1a4a75; padding-bottom: 10px; animation: fadeIn 0.5s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Camada de desbloqueio de áudio */
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); color: #ffeb3b;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; cursor: pointer; text-align: center;
+        }
     </style>
 </head>
 <body>
+
+    <div id="overlay" onclick="iniciarSistema()">
+        <h1>SISTEMA CPM ONLINE</h1>
+        <p style="font-size: 24px;">CLIQUE EM QUALQUER LUGAR PARA ATIVAR O SOM E O PAINEL</p>
+    </div>
+
     <div class="header">
         <div>SISTEMA CPM - GOVERNO DA BAHIA</div>
         <div id="relogio">00:00:00</div>
     </div>
+
     <div class="main">
         <div class="chamada">
             <div style="font-size:45px; letter-spacing: 5px;">SENHA</div>
@@ -41,6 +56,7 @@
             <div id="lista-hist"></div>
         </div>
     </div>
+
     <div class="marquee"><div id="letreiro" class="scroll">AGUARDANDO ATUALIZAÇÃO DO LETREIRO...</div></div>
     
     <audio id="som-alerta" preload="auto">
@@ -52,61 +68,82 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         let lastTs = 0;
+        let audioLiberado = false;
 
-        // 1. Escuta a Senha Atual e Gerencia Histórico
+        function iniciarSistema() {
+            document.getElementById('overlay').style.display = 'none';
+            audioLiberado = true;
+            // Toca um som mudo ou curto apenas para validar o contexto de áudio
+            const audio = document.getElementById('som-alerta');
+            audio.play().then(() => audio.pause());
+            console.log("Áudio liberado pelo usuário.");
+        }
+
+        // 1. Escuta a Senha Atual
         db.ref('senha_atual').on('value', snap => {
             const d = snap.val();
-            if(d && d.timestamp !== lastTs) {
-                // Atualiza Painel Principal
+            if(!d) return;
+
+            // Se for uma senha nova (timestamp maior que o anterior)
+            if(d.timestamp > lastTs) {
                 document.getElementById('senha').innerText = d.senha;
                 document.getElementById('nome').innerText = d.nome;
                 document.getElementById('assunto').innerText = d.assunto;
                 
-                // Tocar Som e Falar
-                const audio = document.getElementById('som-alerta');
-                audio.play().then(() => {
-                    setTimeout(() => falarSenha(d.senha, d.nome, d.assunto), 1200);
-                }).catch(e => console.log("Áudio bloqueado. Clique na tela."));
+                if(audioLiberado) {
+                    const audio = document.getElementById('som-alerta');
+                    audio.currentTime = 0;
+                    audio.play().then(() => {
+                        // Espera 1.5 segundos após o sino para falar
+                        setTimeout(() => falarSenha(d.senha, d.nome), 1500);
+                    }).catch(e => console.log("Erro ao tocar áudio:", e));
+                }
 
-                // Atualiza Histórico Sem Duplicar
                 atualizarHistorico(d.senha, d.nome);
+                lastTs = d.timestamp;
+            } else {
+                // Primeira carga da página (apenas exibe, não toca som)
+                document.getElementById('senha').innerText = d.senha;
+                document.getElementById('nome').innerText = d.nome;
+                document.getElementById('assunto').innerText = d.assunto;
                 lastTs = d.timestamp;
             }
         });
 
-        // 2. Escuta o Letreiro Customizado do ADM
+        // 2. Escuta o Letreiro
         db.ref('configuracoes/letreiro').on('value', snap => {
             const texto = snap.val();
-            if(texto) {
-                document.getElementById('letreiro').innerText = texto.toUpperCase();
-            }
+            if(texto) document.getElementById('letreiro').innerText = texto.toUpperCase();
         });
 
         function atualizarHistorico(senha, nome) {
             const lista = document.getElementById('lista-hist');
-            const primeiroNome = nome.split(' ')[0];
-            const ultimoNome = nome.split(' ').length > 1 ? nome.split(' ').slice(-1) : "";
+            const nomes = nome.split(' ');
+            const formatado = nomes.length > 1 ? `${nomes[0]} ${nomes[nomes.length - 1]}` : nomes[0];
             
             const novoItem = document.createElement('div');
             novoItem.className = 'hist-item';
             novoItem.innerHTML = `<b style="color:#ff0000; font-size:35px">${senha}</b><br>
-                                  <span style="font-size:20px">${primeiroNome} ${ultimoNome}</span>`;
+                                  <span style="font-size:20px; text-transform:uppercase;">${formatado}</span>`;
             
-            // Insere no topo
             lista.insertBefore(novoItem, lista.firstChild);
-            
-            // Mantém apenas as últimas 5 para não sobrecarregar a tela
-            if(lista.children.length > 5) {
-                lista.removeChild(lista.lastChild);
-            }
+            if(lista.children.length > 5) lista.removeChild(lista.lastChild);
         }
 
-        function falarSenha(senha, nome, assunto) {
-            window.speechSynthesis.cancel();
-            const texto = `Senha ${senha.split('').join(' ')}. ${nome}.`;
+        function falarSenha(senha, nome) {
+            if (!('speechSynthesis' in window)) return;
+            
+            window.speechSynthesis.cancel(); // Para falas anteriores
+            
+            // Soletrar a senha para ficar claro (ex: P 0 1)
+            const senhaSoletrada = senha.toString().split('').join(' ');
+            const texto = `Senha, ${senhaSoletrada}. ${nome}.`;
+            
             const msg = new SpeechSynthesisUtterance(texto);
             msg.lang = 'pt-BR';
-            msg.rate = 0.9;
+            msg.rate = 0.8; // Velocidade levemente reduzida
+            msg.pitch = 1;
+            
             window.speechSynthesis.speak(msg);
         }
 
@@ -114,13 +151,6 @@
         setInterval(() => {
             document.getElementById('relogio').innerText = new Date().toLocaleTimeString('pt-br');
         }, 1000);
-
-        // Clique para liberar som (Exigência dos navegadores)
-        document.body.addEventListener('click', () => {
-            console.log("Áudio liberado");
-            const audio = document.getElementById('som-alerta');
-            audio.play().then(() => audio.pause());
-        }, {once: true});
     </script>
 </body>
 </html>
