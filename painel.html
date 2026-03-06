@@ -6,40 +6,48 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <style>
-        body { background: #0b3c66; color: white; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        .header { display: flex; justify-content: space-between; padding: 15px 30px; background: rgba(0,0,0,0.3); border-bottom: 3px solid #ff0000; font-size: 24px; font-weight: bold; }
+        :root { --azul-ba: #0b3c66; --vermelho-ba: #d50000; --amarelo: #ffeb3b; }
+        
+        body { background: var(--azul-ba); color: white; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; transition: background 0.2s; }
+        
+        /* Efeito de Alerta Visual */
+        .alerta-visual { animation: flash 0.5s ease-in-out 3; }
+        @keyframes flash {
+            0% { background: var(--azul-ba); filter: invert(0); }
+            50% { background: white; filter: invert(1); }
+            100% { background: var(--azul-ba); filter: invert(0); }
+        }
+
+        .header { display: flex; justify-content: space-between; padding: 15px 30px; background: rgba(0,0,0,0.3); border-bottom: 3px solid var(--vermelho-ba); font-size: 24px; font-weight: bold; }
         .main { display: grid; grid-template-columns: 3fr 1fr; flex-grow: 1; }
-        .chamada { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 5px solid #ff0000; text-align: center; background: radial-gradient(circle, #0e4a7d 0%, #0b3c66 100%); }
-        .senha { font-size: 220px; font-weight: 900; color: #ff0000; margin: 0; line-height: 0.9; text-shadow: 4px 4px 10px rgba(0,0,0,0.5); }
+        .chamada { display: flex; flex-direction: column; justify-content: center; align-items: center; border-right: 5px solid var(--vermelho-ba); text-align: center; background: radial-gradient(circle, #0e4a7d 0%, #0b3c66 100%); }
+        .senha { font-size: 220px; font-weight: 900; color: var(--vermelho-ba); margin: 0; line-height: 0.9; text-shadow: 4px 4px 10px rgba(0,0,0,0.5); }
         .nome { font-size: 65px; text-transform: uppercase; margin-top: 20px; padding: 0 40px; font-weight: bold; color: #fff; }
         .historico { background: #092d4d; padding: 25px; overflow: hidden; box-shadow: inset 5px 0 15px rgba(0,0,0,0.3); }
         
-        /* Letreiro */
-        .marquee { background: #000; color: #ffeb3b; padding: 18px; font-size: 32px; font-weight: bold; white-space: nowrap; overflow: hidden; border-top: 4px solid #ff0000; }
+        .marquee { background: #000; color: var(--amarelo); padding: 18px; font-size: 32px; font-weight: bold; white-space: nowrap; overflow: hidden; border-top: 4px solid var(--vermelho-ba); }
         .scroll { display: inline-block; padding-left: 100%; animation: scroll 25s linear infinite; }
         @keyframes scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
         
-        #assunto { font-size: 38px; background: #d50000; padding: 15px 60px; border-radius: 60px; margin-top: 35px; font-weight: bold; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 3px solid #fff; }
+        #assunto { font-size: 38px; background: var(--vermelho-ba); padding: 15px 60px; border-radius: 60px; margin-top: 35px; font-weight: bold; text-transform: uppercase; box-shadow: 0 6px 20px rgba(0,0,0,0.4); border: 3px solid #fff; }
         .hist-item { font-size: 30px; margin-bottom: 25px; border-bottom: 2px solid #1a4a75; padding-bottom: 15px; animation: fadeIn 0.8s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Overlay de Ativação */
         #overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 60, 102, 0.98); color: #ffeb3b;
+            background: rgba(11, 60, 102, 0.98); color: var(--amarelo);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 9999; cursor: pointer; text-align: center;
         }
-        .btn-ativar { background: #ff0000; color: white; padding: 30px 60px; border-radius: 15px; font-size: 35px; font-weight: bold; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 30px; }
+        .btn-ativar { background: var(--vermelho-ba); color: white; padding: 30px 60px; border-radius: 15px; font-size: 35px; font-weight: bold; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-top: 30px; cursor: pointer; }
     </style>
 </head>
-<body>
+<body id="painel-body">
 
     <div id="overlay" onclick="iniciarSistema()">
         <h1 style="font-size: 60px; margin: 0;">SISTEMA CPM ONLINE</h1>
         <p style="font-size: 28px; color: white;">PAINEL DE CHAMADA DE SENHAS</p>
-        <button class="btn-ativar">CLIQUE PARA INICIAR O SOM</button>
-        <p style="font-size: 18px; color: #aaa; margin-top: 20px;">(Necessário para liberar o áudio no navegador)</p>
+        <button class="btn-ativar">CLIQUE PARA INICIAR O PAINEL</button>
     </div>
 
     <div class="header">
@@ -49,18 +57,18 @@
 
     <div class="main">
         <div class="chamada">
-            <div style="font-size:50px; letter-spacing: 8px; font-weight: bold; color: #ffeb3b;">SENHA</div>
+            <div style="font-size:50px; letter-spacing: 8px; font-weight: bold; color: var(--amarelo);">SENHA</div>
             <div id="senha" class="senha">---</div>
             <div id="nome" class="nome">Aguardando...</div>
             <div id="assunto">Sincronizando...</div>
         </div>
         <div class="historico">
-            <h2 style="border-bottom:4px solid #ff0000; font-size: 35px; margin-top: 0; padding-bottom: 10px; color: #ffeb3b;">ÚLTIMAS</h2>
+            <h2 style="border-bottom:4px solid var(--vermelho-ba); font-size: 35px; margin-top: 0; padding-bottom: 10px; color: var(--amarelo);">ÚLTIMAS</h2>
             <div id="lista-hist"></div>
         </div>
     </div>
 
-    <div class="marquee"><div id="letreiro" class="scroll">BEM-VINDO AO SISTEMA DE ATENDIMENTO CPM - AGUARDANDO ATUALIZAÇÕES...</div></div>
+    <div class="marquee"><div id="letreiro" class="scroll">BEM-VINDO AO SISTEMA DE ATENDIMENTO CPM - BAHIA</div></div>
     
     <audio id="som-alerta" preload="auto">
         <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
@@ -76,39 +84,34 @@
         function iniciarSistema() {
             document.getElementById('overlay').style.display = 'none';
             audioLiberado = true;
-            
-            // Força a liberação do canal de áudio
             const som = document.getElementById('som-alerta');
-            som.play().then(() => {
-                som.pause();
-                som.currentTime = 0;
-            });
-
-            // "Acorda" a sintetização de voz
+            som.play().then(() => { som.pause(); som.currentTime = 0; });
             if ('speechSynthesis' in window) {
-                const warmup = new SpeechSynthesisUtterance("");
-                window.speechSynthesis.speak(warmup);
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
             }
         }
 
-        // 1. Escuta a Senha Atual
         db.ref('senha_atual').on('value', snap => {
             const d = snap.val();
             if(!d) return;
 
-            // Se for uma senha nova (timestamp maior que o anterior)
+            document.getElementById('senha').innerText = d.senha;
+            document.getElementById('nome').innerText = d.nome;
+            document.getElementById('assunto').innerText = d.assunto || "ATENDIMENTO";
+
             if(d.timestamp > lastTs) {
-                document.getElementById('senha').innerText = d.senha;
-                document.getElementById('nome').innerText = d.nome;
-                document.getElementById('assunto').innerText = d.assunto || "ATENDIMENTO";
-                
                 if(audioLiberado && lastTs !== 0) {
+                    // Dispara o alerta visual (piscar tela)
+                    const body = document.getElementById('painel-body');
+                    body.classList.remove('alerta-visual');
+                    void body.offsetWidth; // Truque para resetar a animação
+                    body.classList.add('alerta-visual');
+
                     const audio = document.getElementById('som-alerta');
                     audio.currentTime = 0;
                     audio.play().then(() => {
-                        // Aguarda 1.2s para começar a falar o nome
-                        setTimeout(() => falarSenha(d.senha, d.nome), 1200);
-                    }).catch(e => console.log("Erro de Autoplay:", e));
+                        setTimeout(() => falarSenha(d.senha, d.nome), 1300);
+                    });
                 }
 
                 if(lastTs !== 0) { 
@@ -116,15 +119,10 @@
                 }
                 lastTs = d.timestamp;
             } else {
-                // Primeira carga do painel
-                document.getElementById('senha').innerText = d.senha;
-                document.getElementById('nome').innerText = d.nome;
-                document.getElementById('assunto').innerText = d.assunto || "ATENDIMENTO";
                 lastTs = d.timestamp;
             }
         });
 
-        // 2. Escuta o Letreiro
         db.ref('configuracoes/letreiro').on('value', snap => {
             const texto = snap.val();
             if(texto) document.getElementById('letreiro').innerText = texto.toUpperCase();
@@ -133,36 +131,24 @@
         function atualizarHistorico(senha, nome) {
             const lista = document.getElementById('lista-hist');
             const nomes = nome.split(' ');
-            // Formata nome para exibir apenas Primeiro e Último nome no histórico
             const formatado = nomes.length > 1 ? `${nomes[0]} ${nomes[nomes.length - 1]}` : nomes[0];
-            
             const novoItem = document.createElement('div');
             novoItem.className = 'hist-item';
-            novoItem.innerHTML = `<b style="color:#ffeb3b; font-size:40px">${senha}</b><br>
-                                  <span style="font-size:22px; text-transform:uppercase; color: #fff;">${formatado}</span>`;
-            
+            novoItem.innerHTML = `<b style="color:var(--amarelo); font-size:40px">${senha}</b><br><span style="font-size:22px; text-transform:uppercase; color: #fff;">${formatado}</span>`;
             lista.insertBefore(novoItem, lista.firstChild);
             if(lista.children.length > 5) lista.removeChild(lista.lastChild);
         }
 
         function falarSenha(senha, nome) {
             if (!('speechSynthesis' in window)) return;
-            
-            window.speechSynthesis.cancel(); 
-            
-            // Soletrar a senha para maior clareza (Ex: P zero um)
+            window.speechSynthesis.cancel();
             const senhaSoletrada = senha.toString().split('').join(' ');
-            const texto = `Senha, ${senhaSoletrada}. ${nome}.`;
-            
-            const msg = new SpeechSynthesisUtterance(texto);
+            const msg = new SpeechSynthesisUtterance(`Senha, ${senhaSoletrada}. Candidato, ${nome}.`);
             msg.lang = 'pt-BR';
-            msg.rate = 0.85; // Velocidade ideal para compreensão
-            msg.pitch = 1.0;
-            
+            msg.rate = 0.85;
             window.speechSynthesis.speak(msg);
         }
 
-        // Relógio em tempo real
         setInterval(() => {
             document.getElementById('relogio').innerText = new Date().toLocaleTimeString('pt-br');
         }, 1000);
